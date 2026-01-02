@@ -296,6 +296,8 @@
                         @php
                             // Check if this profile is already shared with selected user
                             $alreadyShared = $sharedProfiles->where('suggested_user_id', $match->id)->first();
+                            // Check if this profile was previously rejected by the user
+                            $wasRejected = $rejectedProfiles->contains($match->id);
                         @endphp
                         <div class="glass-card rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 match-card"
                              data-match-id="{{ $match->id }}"
@@ -319,14 +321,19 @@
                                     </span>
                                 </div>
                                 
-                                <!-- Already Shared Badge -->
-                                @if($alreadyShared)
-                                    <div class="absolute top-3 left-3">
+                                <!-- Already Shared / Rejected Badge -->
+                                <div class="absolute top-3 left-3 flex flex-col gap-1">
+                                    @if($wasRejected)
+                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-500/90 text-white">
+                                            <i class="fas fa-ban mr-1"></i>Rejected
+                                        </span>
+                                    @endif
+                                    @if($alreadyShared && !$wasRejected)
                                         <span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/90 text-white">
                                             <i class="fas fa-check mr-1"></i>Shared
                                         </span>
-                                    </div>
-                                @endif
+                                    @endif
+                                </div>
                                 
                                 <!-- Name Overlay -->
                                 <div class="absolute bottom-3 left-3 right-3">

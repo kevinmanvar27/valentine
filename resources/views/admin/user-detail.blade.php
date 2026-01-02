@@ -411,7 +411,7 @@
                     </span>
                     <div>
                         <span>Suggestions Received</span>
-                        <span class="ml-2 px-2.5 py-0.5 bg-rose-100 text-rose-700 rounded-full text-sm font-medium">
+                        <span class="suggestions-received-count ml-2 px-2.5 py-0.5 bg-rose-100 text-rose-700 rounded-full text-sm font-medium">
                             {{ $user->sentSuggestions->count() }}
                         </span>
                     </div>
@@ -420,7 +420,7 @@
                 @if($user->sentSuggestions->count() > 0)
                     <div class="space-y-3">
                         @foreach($user->sentSuggestions as $suggestion)
-                            <div class="suggestion-card flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-rose-50/30 rounded-xl border border-gray-100">
+                            <div class="suggestion-card flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-rose-50/30 rounded-xl border border-gray-100" id="suggestion-{{ $suggestion->id }}">
                                 <div class="flex items-center gap-4">
                                     <div class="relative">
                                         <img src="{{ Storage::url($suggestion->suggestedUser->live_image) }}" 
@@ -439,19 +439,30 @@
                                         </p>
                                     </div>
                                 </div>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
-                                    @if($suggestion->status === 'accepted') bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700
-                                    @elseif($suggestion->status === 'rejected') bg-gradient-to-r from-red-100 to-rose-100 text-red-700
-                                    @else bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 @endif">
-                                    @if($suggestion->status === 'accepted')
-                                        <i class="fas fa-check-circle"></i>
-                                    @elseif($suggestion->status === 'rejected')
-                                        <i class="fas fa-times-circle"></i>
-                                    @else
-                                        <i class="fas fa-clock"></i>
+                                <div class="flex items-center gap-3">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
+                                        @if($suggestion->status === 'accepted') bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700
+                                        @elseif($suggestion->status === 'rejected') bg-gradient-to-r from-red-100 to-rose-100 text-red-700
+                                        @else bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 @endif">
+                                        @if($suggestion->status === 'accepted')
+                                            <i class="fas fa-check-circle"></i>
+                                        @elseif($suggestion->status === 'rejected')
+                                            <i class="fas fa-times-circle"></i>
+                                        @else
+                                            <i class="fas fa-clock"></i>
+                                        @endif
+                                        {{ ucfirst($suggestion->status) }}
+                                    </span>
+                                    @if($suggestion->status === 'pending')
+                                        <button type="button" 
+                                            class="revoke-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 hover:from-red-100 hover:to-red-200 hover:text-red-600 transition-all duration-200"
+                                            data-suggestion-id="{{ $suggestion->id }}"
+                                            title="Revoke this suggestion">
+                                            <i class="fas fa-undo"></i>
+                                            Revoke
+                                        </button>
                                     @endif
-                                    {{ ucfirst($suggestion->status) }}
-                                </span>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -638,4 +649,63 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Revoke suggestion functionality
+    document.querySelectorAll('.revoke-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const suggestionId = this.dataset.suggestionId;
+            const button = this;
+            
+            if (!confirm('Are you sure you want to revoke this suggestion?')) {
+                return;
+            }
+            
+            // Show loading state
+            const originalContent = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+            
+            fetch(`/admin/matchmaking/revoke/${suggestionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the suggestion card with animation
+                    const card = document.getElementById(`suggestion-${suggestionId}`);
+                    card.style.transition = 'all 0.3s ease-out';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        card.remove();
+                        // Update counter
+                        const counter = document.querySelector('.suggestions-received-count');
+                        if (counter) {
+                            const currentCount = parseInt(counter.textContent);
+                            counter.textContent = currentCount - 1;
+                        }
+                    }, 300);
+                } else {
+                    alert(data.message || 'Failed to revoke suggestion');
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while revoking the suggestion');
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            });
+        });
+    });
+});
+</script>
 @endsection

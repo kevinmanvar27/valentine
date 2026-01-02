@@ -174,6 +174,9 @@ class AdminController extends Controller
         $locations = User::distinct()->pluck('location')->filter();
         $keywords = ['Hot', 'Handsome', 'Beautiful', 'FWB', 'Friendship', 'Long-term Relationship', 'Casual Dating', 'Marriage'];
 
+        // Rejected profiles (to show warning indicator)
+        $rejectedProfiles = collect();
+
         // If a user is selected
         if ($request->filled('user_id')) {
             $selectedUser = User::with(['sentSuggestions.suggestedUser'])->find($request->user_id);
@@ -184,6 +187,11 @@ class AdminController extends Controller
                     ->with('suggestedUser')
                     ->latest()
                     ->get();
+
+                // Get profiles that were REJECTED by this user (to show warning)
+                $rejectedProfiles = $selectedUser->sentSuggestions()
+                    ->where('status', 'rejected')
+                    ->pluck('suggested_user_id');
 
                 // Get opposite gender
                 $oppositeGender = $selectedUser->gender === 'male' ? 'female' : ($selectedUser->gender === 'female' ? 'male' : null);
@@ -229,7 +237,8 @@ class AdminController extends Controller
             'sharedProfiles', 
             'potentialMatches', 
             'locations', 
-            'keywords'
+            'keywords',
+            'rejectedProfiles'
         ));
     }
 
@@ -298,6 +307,38 @@ class AdminController extends Controller
 
         return redirect()->route('admin.matchmaking', ['user_id' => $request->user_id])
             ->with('success', 'Profile suggestion sent successfully!');
+    }
+
+    public function revokeSuggestion(ProfileSuggestion $suggestion)
+    {
+        // Only allow revoking pending suggestions
+        if ($suggestion->status !== 'pending') {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending suggestions can be revoked.'
+                ]);
+            }
+            return back()->with('error', 'Only pending suggestions can be revoked.');
+        }
+
+        $userId = $suggestion->user_id;
+        $suggestion->delete();
+
+        if (request()->expectsJson()) {
+            // Get updated pending count
+            $pendingCount = ProfileSuggestion::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Suggestion revoked successfully.',
+                'pending_count' => $pendingCount
+            ]);
+        }
+
+        return back()->with('success', 'Suggestion revoked successfully.');
     }
 
     public function setMatch(Request $request)

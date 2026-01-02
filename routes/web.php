@@ -68,6 +68,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     Route::get('/matchmaking', [AdminController::class, 'matchmaking'])->name('matchmaking');
     Route::post('/matchmaking/suggest', [AdminController::class, 'suggestProfile'])->name('matchmaking.suggest');
+    Route::delete('/matchmaking/revoke/{suggestion}', [AdminController::class, 'revokeSuggestion'])->name('matchmaking.revoke');
     Route::post('/matchmaking/set-match', [AdminController::class, 'setMatch'])->name('matchmaking.set-match');
     
     Route::get('/matches', [AdminController::class, 'matches'])->name('matches');
