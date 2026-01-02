@@ -465,6 +465,71 @@
                 @endif
             </div>
             
+            <!-- Profiles Shared to Others (This user's profile was shared to these users) -->
+            <div class="glass-card rounded-2xl shadow-xl p-6 animate-fade-in-up" style="animation-delay: 0.25s;">
+                <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                        <i class="fas fa-share-alt text-white"></i>
+                    </span>
+                    <div>
+                        <span>Profile Shared To</span>
+                        <span class="ml-2 px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                            {{ $user->receivedSuggestions->count() }}
+                        </span>
+                    </div>
+                </h3>
+                
+                @if($user->receivedSuggestions->count() > 0)
+                    <div class="space-y-3">
+                        @foreach($user->receivedSuggestions as $suggestion)
+                            <div class="suggestion-card flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-indigo-50/30 rounded-xl border border-gray-100">
+                                <div class="flex items-center gap-4">
+                                    <div class="relative">
+                                        <img src="{{ Storage::url($suggestion->user->live_image) }}" 
+                                            alt="{{ $suggestion->user->full_name }}"
+                                            class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md">
+                                        <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs
+                                            {{ $suggestion->user->gender === 'male' ? 'bg-blue-500' : ($suggestion->user->gender === 'female' ? 'bg-pink-500' : 'bg-purple-500') }} text-white shadow">
+                                            {{ $suggestion->user->gender === 'male' ? '♂' : ($suggestion->user->gender === 'female' ? '♀' : '⚧') }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-800">{{ $suggestion->user->full_name }}</p>
+                                        <p class="text-sm text-gray-500 flex items-center gap-1">
+                                            <i class="fas fa-map-marker-alt text-xs text-indigo-400"></i>
+                                            {{ $suggestion->user->location }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
+                                        @if($suggestion->status === 'accepted') bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700
+                                        @elseif($suggestion->status === 'rejected') bg-gradient-to-r from-red-100 to-rose-100 text-red-700
+                                        @else bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 @endif">
+                                        @if($suggestion->status === 'accepted')
+                                            <i class="fas fa-check-circle"></i>
+                                        @elseif($suggestion->status === 'rejected')
+                                            <i class="fas fa-times-circle"></i>
+                                        @else
+                                            <i class="fas fa-clock"></i>
+                                        @endif
+                                        {{ ucfirst($suggestion->status) }}
+                                    </span>
+                                    <p class="text-xs text-gray-400 mt-1">{{ $suggestion->created_at->diffForHumans() }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-share-alt text-2xl text-indigo-300"></i>
+                        </div>
+                        <p class="text-gray-500">This profile hasn't been shared to anyone yet</p>
+                    </div>
+                @endif
+            </div>
+            
             <!-- Payments Section -->
             <div class="glass-card rounded-2xl shadow-xl p-6 animate-fade-in-up" style="animation-delay: 0.3s;">
                 <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-3">
