@@ -21,7 +21,7 @@
                         <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
                     </a>
                     <h1 class="text-3xl md:text-4xl font-bold text-white flex items-center">
-                        <i class="fas fa-heart-circle-check mr-4"></i>
+                        <i class="fas fa-heart mr-4"></i>
                         My Matches
                     </h1>
                     <p class="text-white/80 mt-2">Your mutual connections are waiting!</p>
@@ -46,7 +46,7 @@
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">No Matches Yet</h2>
                 <p class="text-gray-600 mb-8">When someone you like also likes you back, they'll appear here. Keep exploring to find your Valentine!</p>
                 <a href="{{ route('user.suggestions') }}" class="bg-gradient-to-r from-valentine-500 to-pink-500 text-white px-8 py-3 rounded-xl font-bold inline-flex items-center shadow-lg hover:shadow-xl transition-all duration-300">
-                    <i class="fas fa-search-heart mr-2"></i>Browse Suggestions
+                    <i class="fas fa-heart mr-2"></i>Browse Suggestions
                 </a>
             </div>
         @else
@@ -73,25 +73,36 @@
                     <div class="bg-gradient-to-br from-white to-valentine-50 rounded-3xl shadow-xl overflow-hidden card-hover border-2 border-valentine-200 hover:border-valentine-400 animate-fade-in" style="animation-delay: {{ $index * 0.1 }}s;">
                         <!-- Match Badge -->
                         <div class="bg-gradient-to-r from-valentine-500 to-pink-500 px-4 py-2 text-white text-center text-sm font-medium">
-                            <i class="fas fa-heart-circle-check mr-2"></i>
+                            <i class="fas fa-check-circle mr-2"></i>
                             Matched {{ $match->match_created_at ? $match->match_created_at->diffForHumans() : 'recently' }}
                         </div>
                         
-                        <!-- Photo Section -->
-                        <div class="relative h-64 overflow-hidden">
-                            @if($match->photo)
-                                <img src="{{ Storage::url($match->photo) }}" alt="{{ $match->full_name }}" class="w-full h-full object-cover">
+                        <!-- Photo Section with Gallery -->
+                        <div class="relative h-64 overflow-hidden group">
+                            @if($match->gallery_images && count($match->gallery_images) > 0)
+                                <img src="{{ Storage::url($match->gallery_images[0]) }}" alt="{{ $match->full_name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                
+                                <!-- Photo Count Badge -->
+                                @if(count($match->gallery_images) > 1)
+                                    <button onclick="openGallery({{ json_encode($match->gallery_images) }}, '{{ $match->full_name }}')" 
+                                            class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center hover:bg-black/80 transition-colors cursor-pointer">
+                                        <i class="fas fa-images mr-1"></i>{{ count($match->gallery_images) }} Photos
+                                    </button>
+                                @endif
                             @else
+                                <!-- SVG Placeholder -->
                                 <div class="w-full h-full bg-gradient-to-br from-valentine-100 to-pink-100 flex items-center justify-center">
-                                    <i class="fas fa-user text-valentine-300 text-6xl"></i>
+                                    <svg class="w-24 h-24 text-valentine-300" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
                                 </div>
                             @endif
                             
                             <!-- Gradient Overlay -->
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none"></div>
                             
                             <!-- Verified Badge -->
-                            @if($match->is_verified)
+                            @if($match->registration_verified)
                                 <div class="absolute top-4 left-4">
                                     <span class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-medium flex items-center shadow-lg">
                                         <i class="fas fa-shield-check mr-1"></i>Verified
@@ -105,11 +116,11 @@
                             </div>
                             
                             <!-- Basic Info Overlay -->
-                            <div class="absolute bottom-4 left-4 right-4 text-white">
+                            <div class="absolute bottom-4 left-4 right-16 text-white">
                                 <h3 class="text-xl font-bold mb-1">{{ $match->full_name }}, {{ $match->age }}</h3>
                                 <p class="text-white/90 text-sm flex items-center">
-                                    <i class="fas fa-graduation-cap mr-2"></i>
-                                    {{ $match->branch }} • {{ $match->year }}
+                                    <i class="fas fa-map-marker-alt mr-2"></i>
+                                    {{ $match->location }}
                                 </p>
                             </div>
                         </div>
@@ -120,7 +131,13 @@
                                 <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $match->bio }}</p>
                             @endif
                             
-                            <!-- Contact Info (if payment verified) -->
+                            <!-- Payment Status Info -->
+                            @php
+                                $userPayment = $match->user_payment;
+                                $partnerPayment = $match->partner_payment;
+                            @endphp
+                            
+                            <!-- Contact Info (if both payments verified) -->
                             @if($match->contact_unlocked)
                                 <div class="bg-green-50 rounded-xl p-4 mb-4 border border-green-100">
                                     <p class="text-green-800 text-sm font-medium mb-3">
@@ -131,8 +148,8 @@
                                             <span class="text-gray-600 text-sm flex items-center">
                                                 <i class="fab fa-whatsapp text-green-500 mr-2"></i>WhatsApp
                                             </span>
-                                            <button onclick="copyToClipboard('{{ $match->whatsapp_no }}')" class="text-valentine-600 text-sm font-medium hover:underline flex items-center">
-                                                {{ $match->whatsapp_no }}
+                                            <button onclick="copyToClipboard('{{ $match->whatsapp_number }}')" class="text-valentine-600 text-sm font-medium hover:underline flex items-center">
+                                                {{ $match->whatsapp_number }}
                                                 <i class="fas fa-copy ml-2"></i>
                                             </button>
                                         </div>
@@ -151,7 +168,7 @@
                                 
                                 <!-- Action Buttons -->
                                 <div class="flex gap-3">
-                                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $match->whatsapp_no) }}" target="_blank" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold flex items-center justify-center hover:bg-green-600 transition-all duration-300">
+                                    <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $match->whatsapp_number) }}" target="_blank" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold flex items-center justify-center hover:bg-green-600 transition-all duration-300">
                                         <i class="fab fa-whatsapp mr-2"></i>Message
                                     </a>
                                     @if($match->instagram_id)
@@ -161,17 +178,77 @@
                                     @endif
                                 </div>
                             @else
-                                <!-- Unlock Contact -->
+                                <!-- Payment Status -->
                                 <div class="bg-valentine-50 rounded-xl p-4 mb-4 border border-valentine-100">
                                     <p class="text-valentine-800 text-sm font-medium mb-2">
                                         <i class="fas fa-lock mr-2"></i>Contact Locked
                                     </p>
-                                    <p class="text-valentine-600 text-xs">Pay to unlock contact details</p>
+                                    
+                                    <!-- Show detailed payment status -->
+                                    <div class="space-y-2 text-xs">
+                                        @if($userPayment)
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-gray-600">Your Payment:</span>
+                                                @if($userPayment->status === 'verified')
+                                                    <span class="text-green-600 font-medium"><i class="fas fa-check-circle mr-1"></i>Verified</span>
+                                                @elseif($userPayment->status === 'submitted')
+                                                    <span class="text-yellow-600 font-medium"><i class="fas fa-clock mr-1"></i>Under Review</span>
+                                                @elseif($userPayment->status === 'rejected')
+                                                    <span class="text-red-600 font-medium"><i class="fas fa-times-circle mr-1"></i>Rejected</span>
+                                                @else
+                                                    <span class="text-gray-500 font-medium"><i class="fas fa-hourglass mr-1"></i>Pending</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        
+                                        @if($partnerPayment)
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-gray-600">Partner's Payment:</span>
+                                                @if($partnerPayment->status === 'verified')
+                                                    <span class="text-green-600 font-medium"><i class="fas fa-check-circle mr-1"></i>Verified</span>
+                                                @elseif($partnerPayment->status === 'submitted')
+                                                    <span class="text-yellow-600 font-medium"><i class="fas fa-clock mr-1"></i>Under Review</span>
+                                                @else
+                                                    <span class="text-gray-500 font-medium"><i class="fas fa-hourglass mr-1"></i>Pending</span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-gray-600">Partner's Payment:</span>
+                                                <span class="text-gray-500 font-medium"><i class="fas fa-hourglass mr-1"></i>Waiting for acceptance</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    <p class="text-valentine-600 text-xs mt-2">
+                                        @if(!$userPayment || $userPayment->status === 'pending' || $userPayment->status === 'rejected')
+                                            Pay to unlock contact details
+                                        @elseif($userPayment->status === 'submitted')
+                                            Waiting for admin verification
+                                        @elseif($userPayment->status === 'verified' && (!$partnerPayment || $partnerPayment->status !== 'verified'))
+                                            Waiting for partner's payment verification
+                                        @endif
+                                    </p>
                                 </div>
                                 
-                                <a href="{{ route('user.matches.payment', $match->match_id) }}" class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center">
-                                    <i class="fas fa-unlock mr-2"></i>Unlock Contact
-                                </a>
+                                @if(!$userPayment || $userPayment->status === 'pending' || $userPayment->status === 'rejected')
+                                    <a href="{{ route('user.matches.payment', $match->match_id) }}" class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center">
+                                        <i class="fas fa-unlock mr-2"></i>
+                                        @if($userPayment && $userPayment->status === 'rejected')
+                                            Resubmit Payment
+                                        @else
+                                            Unlock Contact
+                                        @endif
+                                    </a>
+                                @elseif($userPayment->status === 'submitted')
+                                    <div class="w-full bg-yellow-100 text-yellow-800 py-3 rounded-xl font-bold flex items-center justify-center">
+                                        <i class="fas fa-clock mr-2"></i>Payment Under Review
+                                    </div>
+                                @elseif($userPayment->status === 'verified')
+                                    <div class="w-full bg-blue-100 text-blue-800 py-3 rounded-xl font-bold flex items-center justify-center">
+                                        <i class="fas fa-hourglass-half mr-2"></i>Waiting for Partner
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -181,8 +258,123 @@
     </div>
 </div>
 
+<!-- Photo Gallery Modal -->
+<div id="galleryModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="absolute inset-0" onclick="closeGallery()"></div>
+    
+    <!-- Close Button -->
+    <button onclick="closeGallery()" class="absolute top-4 right-4 w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors z-10">
+        <i class="fas fa-times text-xl"></i>
+    </button>
+    
+    <!-- User Name -->
+    <div id="galleryUserName" class="absolute top-4 left-4 text-white text-lg font-semibold z-10"></div>
+    
+    <!-- Navigation Arrows -->
+    <button onclick="prevImage()" class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors z-10">
+        <i class="fas fa-chevron-left text-xl"></i>
+    </button>
+    <button onclick="nextImage()" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors z-10">
+        <i class="fas fa-chevron-right text-xl"></i>
+    </button>
+    
+    <!-- Main Image -->
+    <div class="relative max-w-4xl max-h-[80vh] mx-auto">
+        <img id="galleryImage" src="" alt="Gallery" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl">
+    </div>
+    
+    <!-- Image Counter -->
+    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
+        <span id="imageCounter">1 / 1</span>
+    </div>
+    
+    <!-- Thumbnail Strip -->
+    <div id="thumbnailStrip" class="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 pb-2">
+        <!-- Thumbnails added dynamically -->
+    </div>
+</div>
+
 @push('scripts')
 <script>
+let galleryImages = [];
+let currentImageIndex = 0;
+
+function openGallery(images, userName) {
+    galleryImages = images;
+    currentImageIndex = 0;
+    
+    document.getElementById('galleryUserName').textContent = userName + "'s Photos";
+    
+    // Build thumbnails
+    const strip = document.getElementById('thumbnailStrip');
+    strip.innerHTML = '';
+    images.forEach((img, index) => {
+        const thumb = document.createElement('img');
+        thumb.src = '/storage/' + img;
+        thumb.className = 'w-16 h-16 object-cover rounded-lg cursor-pointer transition-all ' + (index === 0 ? 'ring-2 ring-white' : 'opacity-60 hover:opacity-100');
+        thumb.onclick = () => goToImage(index);
+        strip.appendChild(thumb);
+    });
+    
+    updateGalleryImage();
+    
+    const modal = document.getElementById('galleryModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeGallery() {
+    const modal = document.getElementById('galleryModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function updateGalleryImage() {
+    const img = document.getElementById('galleryImage');
+    img.src = '/storage/' + galleryImages[currentImageIndex];
+    
+    document.getElementById('imageCounter').textContent = (currentImageIndex + 1) + ' / ' + galleryImages.length;
+    
+    // Update thumbnail highlights
+    const thumbs = document.getElementById('thumbnailStrip').children;
+    Array.from(thumbs).forEach((thumb, index) => {
+        if (index === currentImageIndex) {
+            thumb.classList.add('ring-2', 'ring-white');
+            thumb.classList.remove('opacity-60');
+        } else {
+            thumb.classList.remove('ring-2', 'ring-white');
+            thumb.classList.add('opacity-60');
+        }
+    });
+}
+
+function nextImage() {
+    currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+    updateGalleryImage();
+}
+
+function prevImage() {
+    currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+    updateGalleryImage();
+}
+
+function goToImage(index) {
+    currentImageIndex = index;
+    updateGalleryImage();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('galleryModal');
+    if (!modal.classList.contains('hidden')) {
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'Escape') closeGallery();
+    }
+});
+
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         // Show toast notification

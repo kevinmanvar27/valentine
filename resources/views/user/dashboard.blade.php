@@ -19,14 +19,14 @@
             <div class="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex items-center">
                     <div class="relative">
-                        @if($user->photo)
-                            <img src="{{ Storage::url($user->photo) }}" alt="Profile" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-2xl">
+                        @if($user->gallery_images && count($user->gallery_images) > 0)
+                            <img src="{{ Storage::url($user->gallery_images[0]) }}" alt="Profile" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-2xl">
                         @else
                             <div class="w-24 h-24 rounded-2xl bg-white/20 flex items-center justify-center border-4 border-white shadow-2xl">
                                 <i class="fas fa-user text-white text-3xl"></i>
                             </div>
                         @endif
-                        @if($user->is_verified)
+                        @if($user->registration_verified)
                             <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center shadow-lg">
                                 <i class="fas fa-check text-white text-sm"></i>
                             </div>
@@ -38,19 +38,21 @@
                             <span class="inline-block animate-wiggle">👋</span>
                         </h1>
                         <div class="flex flex-wrap items-center gap-3">
-                            @if($user->is_verified)
+                            @if($user->registration_verified)
                                 <span class="inline-flex items-center bg-green-400/30 text-white px-3 py-1 rounded-lg text-sm font-medium backdrop-blur-sm">
                                     <i class="fas fa-shield-check mr-2"></i>Verified
                                 </span>
                             @endif
-                            @if($user->payment_verified)
+                            @if($user->registration_paid)
                                 <span class="inline-flex items-center bg-yellow-400/30 text-white px-3 py-1 rounded-lg text-sm font-medium backdrop-blur-sm">
                                     <i class="fas fa-crown mr-2"></i>Premium
                                 </span>
                             @endif
+                            @if($user->location)
                             <span class="inline-flex items-center bg-white/20 text-white px-3 py-1 rounded-lg text-sm backdrop-blur-sm">
-                                <i class="fas fa-graduation-cap mr-2"></i>{{ $user->branch }} - {{ $user->year }}
+                                <i class="fas fa-map-marker-alt mr-2"></i>{{ $user->location }}
                             </span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -75,7 +77,7 @@
     
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <!-- Alert Messages -->
-        @if(!$user->is_verified)
+        @if(!$user->registration_verified)
             <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 rounded-2xl p-6 mb-8 animate-fade-in shadow-lg">
                 <div class="flex items-start">
                     <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mr-4 shadow-lg">
@@ -89,7 +91,7 @@
             </div>
         @endif
         
-        @if($user->is_verified && !$user->payment_verified)
+        @if($user->registration_verified && !$user->registration_paid)
             <div class="bg-gradient-to-r from-valentine-50 to-pink-50 border-l-4 border-valentine-500 rounded-2xl p-6 mb-8 animate-fade-in shadow-lg">
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div class="flex items-start">
@@ -107,8 +109,8 @@
                 </div>
             </div>
         @endif
-        
-        <!-- Quick Stats -->
+
+        <?php /* Quick Stats -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
             <div class="bg-gradient-to-br from-valentine-500 to-pink-500 rounded-2xl p-6 shadow-xl card-hover relative overflow-hidden">
 
@@ -174,7 +176,8 @@
                 </div>
             </div>
         </div>
-        
+        */ ?>
+
         <!-- Main Content Grid -->
         <div class="grid lg:grid-cols-3 gap-8">
             <!-- Left Column - Profile Card -->
@@ -183,8 +186,8 @@
                     <div class="gradient-bg-animated p-6 text-center relative">
                         <div class="absolute inset-0 bg-black/10"></div>
                         <div class="relative">
-                            @if($user->photo)
-                                <img src="{{ Storage::url($user->photo) }}" alt="Profile" class="w-32 h-32 rounded-2xl object-cover mx-auto border-4 border-white shadow-2xl">
+                            @if($user->gallery_images && count($user->gallery_images) > 0)
+                                <img src="{{ Storage::url($user->gallery_images[0]) }}" alt="Profile" class="w-32 h-32 rounded-2xl object-cover mx-auto border-4 border-white shadow-2xl">
                             @else
                                 <div class="w-32 h-32 rounded-2xl bg-white/20 flex items-center justify-center mx-auto border-4 border-white shadow-2xl">
                                     <i class="fas fa-user text-white text-4xl"></i>
@@ -198,25 +201,29 @@
                         <p class="text-gray-500 text-center mb-6">{{ $user->age }} years • {{ ucfirst($user->gender) }}</p>
                         
                         <div class="space-y-4">
+                            @if($user->location)
                             <div class="flex items-center text-gray-600">
                                 <div class="w-10 h-10 bg-valentine-100 rounded-xl flex items-center justify-center mr-4">
-                                    <i class="fas fa-graduation-cap text-valentine-500"></i>
+                                    <i class="fas fa-map-marker-alt text-valentine-500"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-400">Branch</p>
-                                    <p class="font-medium text-gray-900">{{ $user->branch }}</p>
+                                    <p class="text-sm text-gray-400">Location</p>
+                                    <p class="font-medium text-gray-900">{{ $user->location }}</p>
                                 </div>
                             </div>
+                            @endif
                             
+                            @if($user->whatsapp_number)
                             <div class="flex items-center text-gray-600">
-                                <div class="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center mr-4">
-                                    <i class="fas fa-calendar text-pink-500"></i>
+                                <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-4">
+                                    <i class="fab fa-whatsapp text-green-500"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-400">Year</p>
-                                    <p class="font-medium text-gray-900">{{ $user->year }}</p>
+                                    <p class="text-sm text-gray-400">WhatsApp</p>
+                                    <p class="font-medium text-gray-900">{{ $user->whatsapp_number }}</p>
                                 </div>
                             </div>
+                            @endif
                             
                             @if($user->instagram_id)
                             <div class="flex items-center text-gray-600">
@@ -260,7 +267,7 @@
                         <a href="{{ route('user.suggestions') }}" class="group bg-gradient-to-r from-valentine-50 to-pink-50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-valentine-100">
                             <div class="flex items-center">
                                 <div class="w-14 h-14 bg-gradient-to-br from-valentine-400 to-pink-500 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:scale-110 transition-transform">
-                                    <i class="fas fa-search-heart text-white text-xl"></i>
+                                    <i class="fas fa-heart text-white text-xl"></i>
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-gray-900">Browse Matches</h3>
@@ -296,7 +303,7 @@
                         <a href="{{ route('couples') }}" class="group bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-green-100">
                             <div class="flex items-center">
                                 <div class="w-14 h-14 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:scale-110 transition-transform">
-                                    <i class="fas fa-heart-circle-check text-white text-xl"></i>
+                                    <i class="fas fa-heart text-white text-xl"></i>
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-gray-900">Success Stories</h3>
@@ -350,7 +357,7 @@
                 <div class="bg-gradient-to-br from-white to-yellow-50 rounded-3xl shadow-xl p-8 border-2 border-yellow-200">
                     <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                         <div class="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center mr-4">
-                            <i class="fas fa-calendar-heart text-yellow-500"></i>
+                            <i class="fas fa-calendar-alt text-yellow-500"></i>
                         </div>
                         Valentine's Week 2026
                     </h2>

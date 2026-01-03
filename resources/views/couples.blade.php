@@ -155,7 +155,7 @@
                                 <i class="fas fa-map-marker-alt mr-2"></i> {{ $couple->user1->location }}
                             </p>
                             <p class="text-gray-400 text-sm mt-2 flex items-center justify-center">
-                                <i class="fas fa-calendar-heart mr-2"></i>
+                                <i class="fas fa-calendar-alt mr-2"></i>
                                 Matched on {{ $couple->coupled_at->format('F d, Y') }}
                             </p>
                             

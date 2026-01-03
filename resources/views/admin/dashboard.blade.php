@@ -120,7 +120,7 @@
         <div class="stat-card bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-5 border-2 border-purple-200 group">
             <div class="flex items-center justify-between mb-3">
                 <div class="stat-icon w-12 h-12 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-300">
-                    <i class="fas fa-heart-circle-check text-white text-lg"></i>
+                    <i class="fas fa-check-circle text-white text-lg"></i>
                 </div>
                 <span class="text-xs text-violet-600 bg-violet-50 px-2 py-1 rounded-full font-medium">💕</span>
             </div>
@@ -339,9 +339,19 @@
                             <td class="py-4">
                                 <div class="flex items-center">
                                     <div class="relative">
-                                        <img src="{{ get_image_url($user->live_image) }}" 
-                                            alt="{{ $user->full_name }}"
-                                            class="w-11 h-11 rounded-xl object-cover border-2 border-white shadow">
+                                        @if($user->gallery_images && count($user->gallery_images) > 0)
+                                            <img src="{{ Storage::url($user->gallery_images[0]) }}" 
+                                                alt="{{ $user->full_name }}"
+                                                class="w-11 h-11 rounded-xl object-cover border-2 border-white shadow">
+                                        @elseif($user->live_image)
+                                            <img src="{{ Storage::url($user->live_image) }}" 
+                                                alt="{{ $user->full_name }}"
+                                                class="w-11 h-11 rounded-xl object-cover border-2 border-white shadow">
+                                        @else
+                                            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-valentine-100 to-pink-100 flex items-center justify-center border-2 border-white shadow">
+                                                <i class="fas fa-user text-valentine-300"></i>
+                                            </div>
+                                        @endif
                                         <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white
                                             @if($user->status === 'active') bg-green-500
                                             @elseif($user->status === 'matched') bg-valentine-500

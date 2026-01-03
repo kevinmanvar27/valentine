@@ -53,9 +53,21 @@
                 </div>
                 
                 <div class="text-center mb-4">
-                    <img src="{{ get_image_url($selectedUser->live_image) }}" 
-                        alt="{{ $selectedUser->full_name }}"
-                        class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">
+                    @if($selectedUser->gallery_images && count($selectedUser->gallery_images) > 0)
+                        <img src="{{ Storage::url($selectedUser->gallery_images[0]) }}" 
+                            alt="{{ $selectedUser->full_name }}"
+                            class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">
+                    @elseif($selectedUser->live_image)
+                        <img src="{{ Storage::url($selectedUser->live_image) }}" 
+                            alt="{{ $selectedUser->full_name }}"
+                            class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">
+                    @else
+                        <div class="w-24 h-24 rounded-full mx-auto border-4 border-white shadow-lg bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                            <svg class="w-12 h-12 text-rose-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                    @endif
                     <h3 class="font-bold text-xl text-gray-800 mt-3">{{ $selectedUser->full_name }}</h3>
                     <p class="text-gray-500">{{ $selectedUser->age }} years old</p>
                 </div>
@@ -136,9 +148,21 @@
                                         @if($suggestion->status === 'accepted') style="background-color: #f0fdf4; border-color: #bbf7d0;"
                                         @elseif($suggestion->status === 'rejected') style="background-color: #fef2f2; border-color: #fecaca;"
                                         @else style="background-color: #f9fafb; border-color: #e5e7eb;" @endif>
-                                        <img src="{{ get_image_url($suggestion->suggestedUser->live_image ?? '') }}" 
-                                            alt="{{ $suggestion->suggestedUser->full_name }}"
-                                            class="w-12 h-12 rounded-full object-cover mr-3 border-2 border-white shadow">
+                                        @if($suggestion->suggestedUser->gallery_images && count($suggestion->suggestedUser->gallery_images) > 0)
+                                            <img src="{{ Storage::url($suggestion->suggestedUser->gallery_images[0]) }}" 
+                                                alt="{{ $suggestion->suggestedUser->full_name }}"
+                                                class="w-12 h-12 rounded-full object-cover mr-3 border-2 border-white shadow">
+                                        @elseif($suggestion->suggestedUser->live_image)
+                                            <img src="{{ Storage::url($suggestion->suggestedUser->live_image) }}" 
+                                                alt="{{ $suggestion->suggestedUser->full_name }}"
+                                                class="w-12 h-12 rounded-full object-cover mr-3 border-2 border-white shadow">
+                                        @else
+                                            <div class="w-12 h-12 rounded-full mr-3 border-2 border-white shadow bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-6 h-6 text-rose-300" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                                </svg>
+                                            </div>
+                                        @endif
                                         <div class="flex-1 min-w-0">
                                             <p class="font-semibold text-gray-800 truncate">{{ $suggestion->suggestedUser->full_name }}</p>
                                             <p class="text-xs text-gray-500">
@@ -307,8 +331,6 @@
                         @php
                             // Check if this profile is already shared with selected user
                             $alreadyShared = $sharedProfiles->where('suggested_user_id', $match->id)->first();
-                            // Check if this profile was previously rejected by the user
-                            $wasRejected = $rejectedProfiles->contains($match->id);
                         @endphp
                         <div class="glass-card rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 match-card"
                              data-match-id="{{ $match->id }}"
@@ -316,9 +338,21 @@
                             
                             <!-- User Image -->
                             <div class="relative group">
-                                <img src="{{ get_image_url($match->live_image) }}" 
-                                    alt="{{ $match->full_name }}"
-                                    class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105">
+                                @if($match->gallery_images && count($match->gallery_images) > 0)
+                                    <img src="{{ Storage::url($match->gallery_images[0]) }}" 
+                                        alt="{{ $match->full_name }}"
+                                        class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105">
+                                @elseif($match->live_image)
+                                    <img src="{{ Storage::url($match->live_image) }}" 
+                                        alt="{{ $match->full_name }}"
+                                        class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105">
+                                @else
+                                    <div class="w-full h-48 bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
+                                        <svg class="w-16 h-16 text-rose-300" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                        </svg>
+                                    </div>
+                                @endif
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                                 
                                 <!-- Gender Badge -->
@@ -332,14 +366,9 @@
                                     </span>
                                 </div>
                                 
-                                <!-- Already Shared / Rejected Badge -->
+                                <!-- Already Shared Badge -->
                                 <div class="absolute top-3 left-3 flex flex-col gap-1">
-                                    @if($wasRejected)
-                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-500/90 text-white">
-                                            <i class="fas fa-ban mr-1"></i>Rejected
-                                        </span>
-                                    @endif
-                                    @if($alreadyShared && !$wasRejected)
+                                    @if($alreadyShared)
                                         <span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/90 text-white">
                                             <i class="fas fa-check mr-1"></i>Shared
                                         </span>

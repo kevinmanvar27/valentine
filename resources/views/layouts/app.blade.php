@@ -508,7 +508,7 @@
                 <div class="hidden md:flex items-center space-x-2 lg:space-x-3">
                     @guest
                         <a href="{{ route('couples') }}" class="text-white px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/30 transition-all duration-300 flex items-center font-medium backdrop-blur-sm group">
-                            <i class="fas fa-heart-circle-check mr-2 text-pink-200 group-hover:text-yellow-300 transition-colors"></i> 
+                            <i class="fas fa-check-circle mr-2 text-pink-200 group-hover:text-yellow-300 transition-colors"></i> 
                             <span>Couples</span>
                         </a>
                         <a href="{{ route('login') }}" class="text-white px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/30 transition-all duration-300 flex items-center font-medium backdrop-blur-sm group">
@@ -564,7 +564,7 @@
                 @guest
                     <a href="{{ route('couples') }}" class="flex items-center text-white px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-all duration-300">
                         <div class="w-10 h-10 bg-gradient-to-br from-pink-400 to-valentine-400 rounded-xl flex items-center justify-center mr-3 shadow-lg">
-                            <i class="fas fa-heart-circle-check text-white"></i>
+                            <i class="fas fa-check-circle text-white"></i>
                         </div>
                         Couples
                     </a>
@@ -665,7 +665,7 @@
     </main>
 
     <!-- Footer - Enhanced Colorful Design -->
-    <footer class="mt-16 relative overflow-hidden">
+    <footer class="relative overflow-hidden">
         <!-- Multi-layer Gradient Background -->
         <div class="absolute inset-0 bg-gradient-to-br from-valentine-600 via-pink-600 to-purple-700"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent"></div>
@@ -710,17 +710,7 @@
                     <p class="text-white/80 leading-relaxed text-lg">
                         Find your perfect Valentine partner. Connect with like-minded singles and start your beautiful love story today.
                     </p>
-                    <div class="flex space-x-3 mt-6">
-                        <a href="#" class="w-12 h-12 bg-gradient-to-br from-pink-400 to-valentine-400 rounded-xl flex items-center justify-center text-white hover:from-yellow-400 hover:to-orange-400 hover:text-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 border border-white/20">
-                            <i class="fab fa-instagram text-lg"></i>
-                        </a>
-                        <a href="#" class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-xl flex items-center justify-center text-white hover:from-yellow-400 hover:to-orange-400 hover:text-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 border border-white/20">
-                            <i class="fab fa-twitter text-lg"></i>
-                        </a>
-                        <a href="#" class="w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-xl flex items-center justify-center text-white hover:from-yellow-400 hover:to-orange-400 hover:text-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 border border-white/20">
-                            <i class="fab fa-facebook-f text-lg"></i>
-                        </a>
-                    </div>
+                    
                 </div>
                 
                 <!-- Quick Links -->
@@ -741,7 +731,7 @@
                         </li>
                         <li>
                             <a href="{{ route('couples') }}" class="text-white/80 hover:text-yellow-300 transition-all duration-300 flex items-center group bg-white/5 hover:bg-white/10 rounded-xl px-4 py-3 border border-white/10">
-                                <i class="fas fa-heart-circle-check text-pink-300 mr-3 group-hover:text-yellow-300 transition-colors"></i>
+                                <i class="fas fa-check-circle text-pink-300 mr-3 group-hover:text-yellow-300 transition-colors"></i>
                                 <span>Success Stories</span>
                                 <i class="fas fa-arrow-right ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-yellow-300"></i>
                             </a>
@@ -767,14 +757,14 @@
                 <div>
                     <h4 class="text-white font-bold text-xl mb-6 flex items-center">
                         <span class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg flex items-center justify-center mr-3 shadow">
-                            <i class="fas fa-calendar-heart text-gray-900 text-sm"></i>
+                            <i class="fas fa-calendar-alt text-gray-900 text-sm"></i>
                         </span>
                         Event Period
                     </h4>
                     <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm rounded-2xl p-6 border-2 border-white/20 shadow-xl">
                         <div class="flex items-center mb-4">
                             <div class="w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                                <i class="fas fa-calendar-heart text-gray-900 text-2xl"></i>
+                                <i class="fas fa-calendar-alt text-gray-900 text-2xl"></i>
                             </div>
                             <div>
                                 <p class="text-white font-bold text-xl">Feb 7-14, 2026</p>

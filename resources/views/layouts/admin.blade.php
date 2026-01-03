@@ -215,7 +215,7 @@
                     <a href="{{ route('admin.couples') }}" 
                         class="flex items-center px-4 py-3 rounded-xl mb-2 transition-all duration-200 {{ request()->routeIs('admin.couples') ? 'nav-item-active text-white' : 'text-white/70 nav-item-hover' }}">
                         <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ request()->routeIs('admin.couples') ? 'bg-white/20' : 'bg-white/5' }}">
-                            <i class="fas fa-heart-circle-check"></i>
+                            <i class="fas fa-check-circle"></i>
                         </div>
                         <span class="ml-3 font-medium">Couples</span>
                     </a>

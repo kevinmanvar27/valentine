@@ -202,6 +202,11 @@ class AdminController extends Controller
                     ->where('registration_verified', true)
                     ->where('id', '!=', $selectedUser->id);
 
+                // EXCLUDE rejected profiles from potential matches
+                if ($rejectedProfiles->isNotEmpty()) {
+                    $matchQuery->whereNotIn('id', $rejectedProfiles);
+                }
+
                 // Filter by opposite gender
                 if ($oppositeGender) {
                     $matchQuery->where('gender', $oppositeGender);
@@ -368,14 +373,7 @@ class AdminController extends Controller
         $userId = $suggestion->user_id;
         $suggestionId = $suggestion->id;
         
-        // Notify user about revocation
-        Notification::create([
-            'user_id' => $userId,
-            'title' => 'Profile Suggestion Revoked',
-            'message' => 'A profile suggestion has been revoked by admin.',
-            'type' => 'info',
-        ]);
-        
+        // Delete suggestion without notifying user
         $suggestion->delete();
 
         if (request()->expectsJson()) {
@@ -452,12 +450,16 @@ class AdminController extends Controller
 
     public function pendingPayments()
     {
-        $payments = MatchPayment::where('status', 'submitted')
-            ->with(['match.user1', 'match.user2', 'user'])
+        // Get matches that have at least one submitted payment
+        $matches = UserMatch::whereHas('payments', function($q) {
+                $q->where('status', 'submitted');
+            })
+            ->orWhere('status', 'pending_payment')
+            ->with(['user1', 'user2', 'payments'])
             ->latest()
             ->paginate(20);
 
-        return view('admin.pending-payments', compact('payments'));
+        return view('admin.pending-payments', compact('matches'));
     }
 
     public function verifyMatchPayment(Request $request, MatchPayment $payment)

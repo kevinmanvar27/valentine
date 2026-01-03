@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Storage;
+
 if (!function_exists('get_image_url')) {
     /**
      * Get the proper URL for an image stored in the application

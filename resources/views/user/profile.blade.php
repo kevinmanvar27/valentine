@@ -47,17 +47,27 @@
                 </h2>
                 
                 <div class="grid md:grid-cols-2 gap-8">
-                    <!-- Live Photo -->
+                    <!-- Live Photo - For Verification Only -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-3">Live Photo</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            Live Photo 
+                            <span class="text-xs text-gray-400 font-normal">(For verification only - not shown to others)</span>
+                        </label>
                         <div class="relative">
                             <div id="livePhotoPreview" class="w-full h-64 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
                                 @if($user->live_image)
-                                    <img src="{{ get_image_url($user->live_image) }}" alt="Live Photo" class="w-full h-full object-cover">
+                                    <div class="text-center">
+                                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <i class="fas fa-check text-green-500 text-2xl"></i>
+                                        </div>
+                                        <p class="text-green-600 font-medium">Live photo uploaded</p>
+                                        <p class="text-gray-400 text-sm mt-1">Used for admin verification only</p>
+                                    </div>
                                 @else
                                     <div class="text-center">
                                         <i class="fas fa-camera text-4xl text-gray-400 mb-3"></i>
                                         <p class="text-gray-500">No live photo</p>
+                                        <p class="text-gray-400 text-sm mt-1">Required for verification</p>
                                     </div>
                                 @endif
                             </div>
@@ -66,38 +76,70 @@
                             </button>
                         </div>
                         <input type="hidden" name="live_photo_data" id="livePhotoData">
+                        <p class="text-yellow-600 text-xs mt-2 flex items-center">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            This photo is private and only used by admin to verify your identity
+                        </p>
                     </div>
                     
-                    <!-- Gallery Images -->
+                    <!-- Gallery Images - Profile Pictures -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-3">Gallery Images</label>
-                        <div class="grid grid-cols-3 gap-2 mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            Gallery Images 
+                            <span class="text-xs text-valentine-500 font-normal">(First image = Profile Picture)</span>
+                        </label>
+                        
+                        <!-- Existing Images - Draggable & Removable -->
+                        <div id="galleryContainer" class="grid grid-cols-3 gap-2 mb-4">
                             @if($user->gallery_images && count($user->gallery_images) > 0)
-                                @foreach($user->gallery_images as $image)
-                                    <div class="aspect-square rounded-xl overflow-hidden bg-gray-100">
-                                        <img src="{{ get_image_url($image) }}" alt="Gallery" class="w-full h-full object-cover">
+                                @foreach($user->gallery_images as $index => $image)
+                                    <div class="gallery-item aspect-square rounded-xl overflow-hidden bg-gray-100 relative {{ $index === 0 ? 'ring-2 ring-valentine-500' : '' }} cursor-move group" 
+                                         data-image="{{ $image }}" draggable="true">
+                                        <img src="{{ Storage::url($image) }}" alt="Gallery" class="w-full h-full object-cover">
+                                        @if($index === 0)
+                                            <div class="absolute top-1 left-1 bg-valentine-500 text-white text-xs px-2 py-0.5 rounded-full profile-badge">
+                                                Profile
+                                            </div>
+                                        @endif
+                                        <!-- Remove Button -->
+                                        <button type="button" onclick="removeGalleryImage(this)" 
+                                                class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </button>
+                                        <!-- Drag Handle -->
+                                        <div class="absolute bottom-1 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <i class="fas fa-grip-horizontal mr-1"></i>Drag
+                                        </div>
                                     </div>
                                 @endforeach
                                 @for($i = count($user->gallery_images); $i < 6; $i++)
-                                    <div class="aspect-square rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                                    <div class="empty-slot aspect-square rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
                                         <i class="fas fa-plus text-gray-400"></i>
                                     </div>
                                 @endfor
                             @else
                                 @for($i = 0; $i < 6; $i++)
-                                    <div class="aspect-square rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                                    <div class="empty-slot aspect-square rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
                                         <i class="fas fa-plus text-gray-400"></i>
                                     </div>
                                 @endfor
                             @endif
                         </div>
+                        
+                        <!-- Hidden input to store image order -->
+                        <input type="hidden" name="gallery_order" id="galleryOrder" value="{{ $user->gallery_images ? json_encode($user->gallery_images) : '[]' }}">
+                        <input type="hidden" name="removed_images" id="removedImages" value="[]">
+                        
                         <div class="relative">
                             <input type="file" name="gallery_images[]" id="galleryInput" accept="image/*" multiple class="hidden">
                             <button type="button" onclick="document.getElementById('galleryInput').click()" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300 flex items-center justify-center">
                                 <i class="fas fa-images mr-2"></i>Upload Gallery Images
                             </button>
                         </div>
-                        <p class="text-gray-400 text-sm mt-2">Max 6 images, 5MB each</p>
+                        <p class="text-gray-400 text-sm mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Max 6 images, 5MB each. Drag to reorder. First image = profile picture.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -239,7 +281,7 @@
             <div class="bg-gradient-to-br from-white to-purple-50 rounded-3xl shadow-xl p-8 border-2 border-purple-200 animate-fade-in" style="animation-delay: 0.3s;">
                 <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
                     <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center mr-4 shadow">
-                        <i class="fas fa-search-heart text-white"></i>
+                        <i class="fas fa-heart text-white"></i>
                     </div>
                     Partner Preferences
                 </h2>
@@ -485,6 +527,212 @@ function usePhoto() {
     document.getElementById('livePhotoData').value = capturedData;
     document.getElementById('livePhotoPreview').innerHTML = `<img src="${capturedData}" class="w-full h-full object-cover">`;
     closeCameraModal();
+}
+
+// ===== Gallery Image Management =====
+let draggedItem = null;
+let removedImages = [];
+
+// Initialize drag and drop
+document.addEventListener('DOMContentLoaded', function() {
+    initGalleryDragDrop();
+});
+
+function initGalleryDragDrop() {
+    const container = document.getElementById('galleryContainer');
+    const items = container.querySelectorAll('.gallery-item');
+    
+    items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function handleDragStart(e) {
+    draggedItem = this;
+    this.classList.add('opacity-50', 'scale-95');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('opacity-50', 'scale-95');
+    document.querySelectorAll('.gallery-item').forEach(item => {
+        item.classList.remove('ring-4', 'ring-blue-400');
+    });
+    draggedItem = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    if (this !== draggedItem) {
+        this.classList.add('ring-4', 'ring-blue-400');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('ring-4', 'ring-blue-400');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('ring-4', 'ring-blue-400');
+    
+    if (this !== draggedItem && draggedItem) {
+        const container = document.getElementById('galleryContainer');
+        const items = [...container.querySelectorAll('.gallery-item')];
+        const draggedIndex = items.indexOf(draggedItem);
+        const dropIndex = items.indexOf(this);
+        
+        if (draggedIndex < dropIndex) {
+            this.parentNode.insertBefore(draggedItem, this.nextSibling);
+        } else {
+            this.parentNode.insertBefore(draggedItem, this);
+        }
+        
+        updateGalleryOrder();
+        updateProfileBadge();
+    }
+}
+
+function removeGalleryImage(button) {
+    const item = button.closest('.gallery-item');
+    const imagePath = item.dataset.image;
+    
+    // Add to removed images list
+    removedImages.push(imagePath);
+    document.getElementById('removedImages').value = JSON.stringify(removedImages);
+    
+    // Create empty slot to replace
+    const emptySlot = document.createElement('div');
+    emptySlot.className = 'empty-slot aspect-square rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center';
+    emptySlot.innerHTML = '<i class="fas fa-plus text-gray-400"></i>';
+    
+    // Replace the item with empty slot
+    item.parentNode.replaceChild(emptySlot, item);
+    
+    // Move empty slots to the end
+    const container = document.getElementById('galleryContainer');
+    const emptySlots = container.querySelectorAll('.empty-slot');
+    emptySlots.forEach(slot => container.appendChild(slot));
+    
+    updateGalleryOrder();
+    updateProfileBadge();
+}
+
+function updateGalleryOrder() {
+    const container = document.getElementById('galleryContainer');
+    const items = container.querySelectorAll('.gallery-item');
+    const order = [];
+    
+    items.forEach(item => {
+        order.push(item.dataset.image);
+    });
+    
+    document.getElementById('galleryOrder').value = JSON.stringify(order);
+}
+
+function updateProfileBadge() {
+    const container = document.getElementById('galleryContainer');
+    const items = container.querySelectorAll('.gallery-item');
+    
+    // Remove all profile badges and rings
+    items.forEach(item => {
+        item.classList.remove('ring-2', 'ring-valentine-500');
+        const badge = item.querySelector('.profile-badge');
+        if (badge) badge.remove();
+    });
+    
+    // Add badge to first item
+    if (items.length > 0) {
+        const firstItem = items[0];
+        firstItem.classList.add('ring-2', 'ring-valentine-500');
+        
+        const badge = document.createElement('div');
+        badge.className = 'absolute top-1 left-1 bg-valentine-500 text-white text-xs px-2 py-0.5 rounded-full profile-badge';
+        badge.textContent = 'Profile';
+        firstItem.appendChild(badge);
+    }
+}
+
+// Handle new gallery image uploads preview
+document.getElementById('galleryInput')?.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const container = document.getElementById('galleryContainer');
+    const currentItems = container.querySelectorAll('.gallery-item').length;
+    const emptySlots = container.querySelectorAll('.empty-slot');
+    const maxNew = Math.min(files.length, 6 - currentItems);
+    
+    if (files.length > maxNew) {
+        alert(`You can only add ${maxNew} more image(s). Maximum 6 images allowed.`);
+    }
+    
+    // Preview new images (they'll be uploaded on form submit)
+    files.slice(0, maxNew).forEach((file, index) => {
+        if (emptySlots[index]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const newItem = document.createElement('div');
+                newItem.className = 'gallery-item aspect-square rounded-xl overflow-hidden bg-gray-100 relative cursor-move group new-upload';
+                newItem.dataset.image = 'new_' + index;
+                newItem.draggable = true;
+                newItem.innerHTML = `
+                    <img src="${e.target.result}" alt="New Gallery" class="w-full h-full object-cover">
+                    <div class="absolute top-1 right-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">New</div>
+                    <button type="button" onclick="removeNewUpload(this)" 
+                            class="absolute top-1 right-8 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-grip-horizontal mr-1"></i>Drag
+                    </div>
+                `;
+                
+                emptySlots[index].parentNode.replaceChild(newItem, emptySlots[index]);
+                
+                // Add drag events to new item
+                newItem.addEventListener('dragstart', handleDragStart);
+                newItem.addEventListener('dragend', handleDragEnd);
+                newItem.addEventListener('dragover', handleDragOver);
+                newItem.addEventListener('drop', handleDrop);
+                newItem.addEventListener('dragenter', handleDragEnter);
+                newItem.addEventListener('dragleave', handleDragLeave);
+                
+                updateProfileBadge();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+
+function removeNewUpload(button) {
+    const item = button.closest('.gallery-item');
+    
+    // Create empty slot to replace
+    const emptySlot = document.createElement('div');
+    emptySlot.className = 'empty-slot aspect-square rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center';
+    emptySlot.innerHTML = '<i class="fas fa-plus text-gray-400"></i>';
+    
+    // Replace the item with empty slot
+    item.parentNode.replaceChild(emptySlot, item);
+    
+    // Move empty slots to the end
+    const container = document.getElementById('galleryContainer');
+    const emptySlots = container.querySelectorAll('.empty-slot');
+    emptySlots.forEach(slot => container.appendChild(slot));
+    
+    // Clear file input so user can re-select
+    document.getElementById('galleryInput').value = '';
+    
+    updateProfileBadge();
 }
 </script>
 @endpush

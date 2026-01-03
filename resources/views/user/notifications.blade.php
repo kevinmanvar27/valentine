@@ -149,16 +149,24 @@
                                     @endphp
                                     
                                     @if($suggestionStatus === 'pending' && $suggestedUser)
-                                        <!-- View Profile Button -->
+                                        <!-- View Profile Button - Pending -->
                                         <button onclick="openProfileModal({{ $notification->related_id }})" 
                                                 class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center mb-3">
                                             <i class="fas fa-user mr-2"></i>View Profile
                                         </button>
-                                    @elseif($suggestionStatus === 'accepted')
-                                        <span class="inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-xl font-semibold mb-3">
-                                            <i class="fas fa-check-circle mr-2"></i>Accepted
-                                        </span>
+                                    @elseif($suggestionStatus === 'accepted' && $suggestedUser)
+                                        <!-- View Profile Button - Accepted (can still view) -->
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <span class="inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-xl font-semibold">
+                                                <i class="fas fa-check-circle mr-2"></i>Accepted
+                                            </span>
+                                            <button onclick="openProfileModal({{ $notification->related_id }}, true)" 
+                                                    class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center text-sm">
+                                                <i class="fas fa-eye mr-2"></i>View Profile
+                                            </button>
+                                        </div>
                                     @elseif($suggestionStatus === 'rejected')
+                                        <!-- Rejected - Cannot view profile -->
                                         <span class="inline-flex items-center bg-gray-100 text-gray-700 px-4 py-2 rounded-xl font-semibold mb-3">
                                             <i class="fas fa-times-circle mr-2"></i>Rejected
                                         </span>
@@ -237,11 +245,13 @@
 <script>
 // Store suggestion data for modal
 let currentSuggestionData = {};
+let isViewOnlyMode = false;
 
 // Open profile modal
-function openProfileModal(suggestionId) {
+function openProfileModal(suggestionId, viewOnly = false) {
     const modal = document.getElementById('profileModal');
     const modalContent = document.getElementById('modalContent');
+    isViewOnlyMode = viewOnly;
     
     // Show modal with loading state
     modal.classList.remove('hidden');
@@ -293,23 +303,48 @@ function renderProfileModal(suggestion) {
         ? user.keywords.map(k => `<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">${k}</span>`).join(' ')
         : '<span class="text-gray-400">No keywords</span>';
     
-    modalContent.innerHTML = `
-        <!-- Profile Image -->
-        <div class="flex justify-center mb-6">
-            <div class="relative">
-                ${user.live_image ? 
-                    `<img src="${user.live_image}" 
+    // Build gallery HTML
+    let galleryHtml = '';
+    if (user.gallery_images && user.gallery_images.length > 0) {
+        galleryHtml = `
+            <div class="mb-6">
+                <!-- Main Image -->
+                <div class="relative mb-3">
+                    <img id="notifMainImage" src="${user.gallery_images[0]}" 
                          alt="${user.full_name}" 
-                         class="w-32 h-32 rounded-full object-cover border-4 border-purple-200 shadow-lg"
-                         onerror="this.onerror=null; this.outerHTML='<div class=\\'w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-4xl font-bold border-4 border-purple-200 shadow-lg\\'>${user.full_name.charAt(0).toUpperCase()}</div>'">` 
-                    : 
-                    `<div class="w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-4xl font-bold border-4 border-purple-200 shadow-lg">
-                        ${user.full_name.charAt(0).toUpperCase()}
-                    </div>`
-                }
-                ${user.is_verified ? '<div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 shadow-lg"><i class="fas fa-check text-sm"></i></div>' : ''}
+                         class="w-full h-64 object-cover rounded-2xl shadow-lg">
+                    ${user.is_verified ? '<div class="absolute top-3 right-3 bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-medium shadow-lg"><i class="fas fa-check mr-1"></i>Verified</div>' : ''}
+                    ${user.gallery_images.length > 1 ? `<div class="absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1 rounded-full text-sm"><i class="fas fa-images mr-1"></i>${user.gallery_images.length}</div>` : ''}
+                </div>
+                <!-- Thumbnail Strip -->
+                ${user.gallery_images.length > 1 ? `
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        ${user.gallery_images.map((img, index) => `
+                            <img src="${img}" 
+                                 alt="Photo ${index + 1}" 
+                                 class="w-16 h-16 object-cover rounded-lg cursor-pointer transition-all ${index === 0 ? 'ring-2 ring-purple-500' : 'opacity-60 hover:opacity-100'}"
+                                 onclick="changeNotifImage('${img}', this)">
+                        `).join('')}
+                    </div>
+                ` : ''}
             </div>
-        </div>
+        `;
+    } else {
+        // SVG placeholder when no photos
+        galleryHtml = `
+            <div class="flex justify-center mb-6">
+                <div class="w-32 h-32 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center border-4 border-purple-200 shadow-lg">
+                    <svg class="w-16 h-16 text-purple-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                </div>
+            </div>
+        `;
+    }
+    
+    modalContent.innerHTML = `
+        <!-- Photo Gallery -->
+        ${galleryHtml}
         
         <!-- Profile Info -->
         <div class="space-y-4 mb-6">
@@ -361,17 +396,25 @@ function renderProfileModal(suggestion) {
             ` : ''}
         </div>
         
-        <!-- Action Buttons -->
-        <div class="flex items-center gap-4 pt-6 border-t-2 border-gray-100">
-            <button onclick="respondToSuggestionFromModal(${suggestion.id}, 'reject')" 
-                    class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center">
-                <i class="fas fa-times mr-2"></i>Reject
-            </button>
-            <button onclick="respondToSuggestionFromModal(${suggestion.id}, 'accept')" 
-                    class="flex-1 bg-gradient-to-r from-valentine-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all duration-300 flex items-center justify-center">
-                <i class="fas fa-heart mr-2"></i>Accept
-            </button>
-        </div>
+        <!-- Action Buttons (only show if not view-only mode) -->
+        ${isViewOnlyMode ? `
+            <div class="pt-6 border-t-2 border-gray-100">
+                <div class="bg-green-100 text-green-700 px-6 py-3 rounded-xl font-bold flex items-center justify-center">
+                    <i class="fas fa-check-circle mr-2"></i>You have already accepted this profile
+                </div>
+            </div>
+        ` : `
+            <div class="flex items-center gap-4 pt-6 border-t-2 border-gray-100">
+                <button onclick="respondToSuggestionFromModal(${suggestion.id}, 'reject')" 
+                        class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center">
+                    <i class="fas fa-times mr-2"></i>Reject
+                </button>
+                <button onclick="respondToSuggestionFromModal(${suggestion.id}, 'accept')" 
+                        class="flex-1 bg-gradient-to-r from-valentine-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all duration-300 flex items-center justify-center">
+                    <i class="fas fa-heart mr-2"></i>Accept
+                </button>
+            </div>
+        `}
     `;
 }
 
@@ -383,6 +426,24 @@ function closeProfileModal(event) {
     modal.classList.add('hidden');
     document.body.style.overflow = 'auto';
     currentSuggestionData = {};
+}
+
+// Change main image when clicking thumbnail
+function changeNotifImage(imageSrc, thumbElement) {
+    // Update main image
+    const mainImage = document.getElementById('notifMainImage');
+    if (mainImage) {
+        mainImage.src = imageSrc;
+    }
+    
+    // Update thumbnail highlights
+    const thumbnails = thumbElement.parentElement.querySelectorAll('img');
+    thumbnails.forEach(thumb => {
+        thumb.classList.remove('ring-2', 'ring-purple-500');
+        thumb.classList.add('opacity-60');
+    });
+    thumbElement.classList.add('ring-2', 'ring-purple-500');
+    thumbElement.classList.remove('opacity-60');
 }
 
 // Respond to suggestion from modal

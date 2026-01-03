@@ -153,10 +153,19 @@ class UserController extends Controller
     {
         $user = Auth::user();
         
+        // Only show PENDING suggestions (not already accepted/rejected)
         $suggestions = ProfileSuggestion::where('user_id', $user->id)
+            ->pending() // Only show suggestions user hasn't responded to yet
             ->with('suggestedUser')
             ->latest()
             ->paginate(10);
+
+        // Get users who have REJECTED the current user
+        // (suggestions where current user was suggested to someone else and they rejected)
+        $rejectedByUsers = ProfileSuggestion::where('suggested_user_id', $user->id)
+            ->where('status', 'rejected')
+            ->pluck('user_id')
+            ->toArray();
 
         // Mark all unviewed suggestions as viewed
         ProfileSuggestion::where('user_id', $user->id)
@@ -166,7 +175,7 @@ class UserController extends Controller
                 'viewed_at' => now(),
             ]);
 
-        return view('user.suggestions', compact('suggestions'));
+        return view('user.suggestions', compact('suggestions', 'rejectedByUsers'));
     }
 
     public function respondToSuggestion(Request $request, ProfileSuggestion $suggestion)
@@ -192,52 +201,70 @@ class UserController extends Controller
             'responded_at' => now(),
         ]);
 
-        // Check if both users have accepted each other
+        $currentUser = Auth::user();
+        $otherUser = User::find($suggestion->suggested_user_id);
+
         if ($status === 'accepted') {
+            // Check if the other user has also accepted (mutual match)
             $match = $this->checkForMutualMatch($suggestion);
             
-            // ALWAYS redirect to payment when user accepts, regardless of mutual match
-            // This ensures immediate payment upon acceptance
             if ($match) {
-                // Mutual match found - redirect to payment
+                // MUTUAL MATCH! Both users accepted - Now redirect to payment
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
-                        'message' => 'Match found! Redirecting to payment...',
+                        'message' => "It's a match! 🎉 Both of you accepted. Please complete payment to exchange contacts.",
                         'redirect_url' => route('user.matches.payment', $match->id),
                         'has_match' => true
                     ]);
                 }
                 
                 return redirect()->route('user.matches.payment', $match->id)
-                    ->with('success', 'Match found! Please complete the payment to exchange contact details.');
+                    ->with('success', "It's a match! 🎉 Please complete the payment to exchange contact details.");
             } else {
-                // No mutual match yet, but create pending match and payment for this user
-                $pendingMatch = $this->createPendingMatchForUser($suggestion);
+                // One-sided acceptance - Just notify and wait for other user
+                // Notify the other user that someone accepted their profile
+                Notification::create([
+                    'user_id' => $suggestion->suggested_user_id,
+                    'title' => 'Someone Liked Your Profile! 💕',
+                    'message' => "{$currentUser->full_name} has accepted your profile. Check your suggestions and respond!",
+                    'type' => 'like',
+                    'related_id' => $suggestion->id,
+                    'related_type' => 'suggestion',
+                ]);
                 
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
-                        'message' => 'Profile accepted! Please complete payment to proceed.',
-                        'redirect_url' => route('user.matches.payment', $pendingMatch->id),
-                        'has_match' => true
+                        'message' => 'Profile accepted! ✅ Waiting for them to accept you back.',
+                        'has_match' => false
                     ]);
                 }
                 
-                return redirect()->route('user.matches.payment', $pendingMatch->id)
-                    ->with('success', 'Profile accepted! Please complete payment. Once the other person accepts and pays, contacts will be shared.');
+                return redirect()->route('user.suggestions')
+                    ->with('success', 'Profile accepted! ✅ You will be notified when they respond. If both accept, you can proceed to payment.');
             }
         } else {
-            // Rejected
+            // Rejected - Notify the other user
+            Notification::create([
+                'user_id' => $suggestion->suggested_user_id,
+                'title' => 'Profile Response',
+                'message' => "Unfortunately, {$currentUser->full_name} has passed on your profile. Don't worry, there are more matches waiting for you!",
+                'type' => 'system',
+                'related_id' => $suggestion->id,
+                'related_type' => 'suggestion',
+            ]);
+            
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Profile rejected.'
                 ]);
             }
+            
+            return redirect()->route('user.suggestions')
+                ->with('success', 'Response recorded.');
         }
-
-        return back()->with('success', 'Response recorded successfully!');
     }
 
     protected function checkForMutualMatch(ProfileSuggestion $suggestion)
@@ -249,7 +276,9 @@ class UserController extends Controller
             ->exists();
 
         if ($reverseAcceptance) {
-            // Get or create match (might already exist from first user's acceptance)
+            // MUTUAL MATCH! Both users have accepted each other
+            // Now create match and payment records
+            
             $match = UserMatch::firstOrCreate([
                 'user1_id' => min($suggestion->user_id, $suggestion->suggested_user_id),
                 'user2_id' => max($suggestion->user_id, $suggestion->suggested_user_id),
@@ -257,9 +286,9 @@ class UserController extends Controller
                 'status' => 'pending_payment',
             ]);
 
-            // Create payment records for both users (if not already created)
-            $paymentAmount = $match->getPaymentAmount();
-            $paymentType = $match->getPaymentType();
+            // Create payment records for BOTH users (mutual match = full amount)
+            $paymentAmount = AdminSetting::getFullPaymentAmount(); // Full amount for mutual match
+            $paymentType = 'full'; // 'full' for mutual match, 'half' for one-sided
 
             foreach ([$match->user1_id, $match->user2_id] as $userId) {
                 $payment = MatchPayment::firstOrCreate([
@@ -271,15 +300,20 @@ class UserController extends Controller
                     'status' => 'pending',
                 ]);
 
-                // Only notify if this is a new payment record (mutual match just happened)
+                // Notify both users about the match
                 if ($payment->wasRecentlyCreated) {
+                    $otherUserId = $userId == $match->user1_id ? $match->user2_id : $match->user1_id;
+                    $otherUser = User::find($otherUserId);
+                    
                     Notification::create([
                         'user_id' => $userId,
-                        'title' => 'Match Found!',
-                        'message' => "Congratulations! You have a mutual match. Please complete the payment of ₹{$paymentAmount} to exchange contact details.",
+                        'title' => "It's a Match! 🎉💕",
+                        'message' => "Great news! You and {$otherUser->full_name} both accepted each other! Complete payment of ₹{$paymentAmount} to exchange contact details.",
                         'type' => 'match',
                         'related_id' => $match->id,
                         'related_type' => 'match',
+                        'action_url' => route('user.matches.payment', $match->id),
+                        'action_text' => 'Pay Now',
                     ]);
                 }
             }
@@ -288,42 +322,6 @@ class UserController extends Controller
         }
         
         return null;
-    }
-
-    protected function createPendingMatchForUser(ProfileSuggestion $suggestion)
-    {
-        // Create or get existing match (one-sided acceptance)
-        $match = UserMatch::firstOrCreate([
-            'user1_id' => min($suggestion->user_id, $suggestion->suggested_user_id),
-            'user2_id' => max($suggestion->user_id, $suggestion->suggested_user_id),
-        ], [
-            'status' => 'pending_payment',
-        ]);
-
-        // Create payment record for the accepting user only
-        $paymentAmount = $match->getPaymentAmount();
-        $paymentType = $match->getPaymentType();
-
-        MatchPayment::firstOrCreate([
-            'match_id' => $match->id,
-            'user_id' => $suggestion->user_id, // Only for the user who accepted
-        ], [
-            'amount' => $paymentAmount,
-            'payment_type' => $paymentType,
-            'status' => 'pending',
-        ]);
-
-        // Notify the accepting user
-        Notification::create([
-            'user_id' => $suggestion->user_id,
-            'title' => 'Complete Your Payment',
-            'message' => "You accepted a profile! Please complete the payment of ₹{$paymentAmount}. Once both of you accept and pay, contacts will be shared.",
-            'type' => 'match',
-            'related_id' => $match->id,
-            'related_type' => 'match',
-        ]);
-
-        return $match;
     }
 
     public function getSuggestionDetails(ProfileSuggestion $suggestion)
@@ -339,14 +337,12 @@ class UserController extends Controller
         // Load the suggested user with all necessary details
         $suggestion->load('suggestedUser');
 
-        // Get first gallery image or fallback to live_image
-        $profileImage = null;
-        if ($suggestion->suggestedUser->gallery_images && is_array($suggestion->suggestedUser->gallery_images) && count($suggestion->suggestedUser->gallery_images) > 0) {
-            // Use first gallery image
-            $profileImage = asset('storage/' . $suggestion->suggestedUser->gallery_images[0]);
-        } elseif ($suggestion->suggestedUser->live_image) {
-            // Fallback to live_image if no gallery images
-            $profileImage = asset('storage/' . $suggestion->suggestedUser->live_image);
+        // Get all gallery images with full URLs
+        $galleryImages = [];
+        if ($suggestion->suggestedUser->gallery_images && is_array($suggestion->suggestedUser->gallery_images)) {
+            foreach ($suggestion->suggestedUser->gallery_images as $image) {
+                $galleryImages[] = asset('storage/' . $image);
+            }
         }
 
         return response()->json([
@@ -362,7 +358,7 @@ class UserController extends Controller
                     'bio' => $suggestion->suggestedUser->bio,
                     'keywords' => $suggestion->suggestedUser->keywords,
                     'instagram_id' => $suggestion->suggestedUser->instagram_id,
-                    'live_image' => $profileImage,
+                    'gallery_images' => $galleryImages,
                     'is_verified' => $suggestion->suggestedUser->registration_verified ?? false,
                 ]
             ]
@@ -502,6 +498,11 @@ class UserController extends Controller
 
     public function notifications()
     {
+        // Mark all notifications as read when user visits this page
+        Auth::user()->notifications()->unread()->update([
+            'is_read' => true,
+        ]);
+        
         $notifications = Auth::user()->notifications()
             ->with(['profileSuggestion' => function($query) {
                 $query->with('suggestedUser');
@@ -558,11 +559,48 @@ class UserController extends Controller
             'preferred_age_max' => 'nullable|integer|min:13|max:60',
             'gallery_images' => 'nullable|array|max:6',
             'gallery_images.*' => 'image|mimes:jpeg,png,jpg|max:5120',
+            'gallery_order' => 'nullable|string',
+            'removed_images' => 'nullable|string',
             'live_photo_data' => 'nullable|string',
         ]);
 
-        // Handle gallery images
-        $galleryPaths = $user->gallery_images ?? [];
+        // Handle gallery images with reordering and removal
+        $currentGallery = $user->gallery_images ?? [];
+        
+        // Process removed images
+        $removedImages = [];
+        if ($request->filled('removed_images')) {
+            $removedImages = json_decode($request->removed_images, true) ?? [];
+            // Delete removed images from storage
+            foreach ($removedImages as $removedPath) {
+                if (!empty($removedPath) && \Storage::disk('public')->exists($removedPath)) {
+                    \Storage::disk('public')->delete($removedPath);
+                }
+            }
+        }
+        
+        // Process gallery order (existing images in new order)
+        $galleryPaths = [];
+        if ($request->filled('gallery_order')) {
+            $orderedImages = json_decode($request->gallery_order, true) ?? [];
+            // Filter out removed images and validate they exist in current gallery
+            foreach ($orderedImages as $imagePath) {
+                if (!empty($imagePath) && 
+                    in_array($imagePath, $currentGallery) && 
+                    !in_array($imagePath, $removedImages)) {
+                    $galleryPaths[] = $imagePath;
+                }
+            }
+        } else {
+            // No reorder - keep current gallery minus removed images
+            foreach ($currentGallery as $imagePath) {
+                if (!in_array($imagePath, $removedImages)) {
+                    $galleryPaths[] = $imagePath;
+                }
+            }
+        }
+        
+        // Handle new gallery image uploads
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $image) {
                 if (count($galleryPaths) < 6) {

@@ -61,7 +61,7 @@
                 <div class="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </a>
             <a href="{{ route('couples') }}" class="group glass text-white px-10 py-5 rounded-2xl font-semibold text-lg hover:bg-white/30 transition-all duration-300 flex items-center">
-                <i class="fas fa-heart-circle-check mr-3 group-hover:scale-110 transition-transform"></i>
+                <i class="fas fa-check-circle mr-3 group-hover:scale-110 transition-transform"></i>
                 View Success Stories
             </a>
         </div>
@@ -159,7 +159,7 @@
                     <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-100 to-transparent rounded-bl-full opacity-50"></div>
                     <div class="relative">
                         <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-search-heart text-white text-3xl"></i>
+                            <i class="fas fa-heart text-white text-3xl"></i>
                         </div>
                         <span class="absolute -top-2 -left-2 w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center text-gray-900 font-bold text-lg shadow-lg">3</span>
                         <h3 class="text-xl font-bold text-gray-900 mb-3">Browse Matches</h3>
@@ -263,7 +263,7 @@
             <!-- Feature 5 -->
             <div class="bg-gradient-to-br from-white to-purple-50 rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 card-hover border-2 border-purple-200 group">
                 <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
-                    <i class="fas fa-calendar-heart text-white text-2xl"></i>
+                    <i class="fas fa-calendar-alt text-white text-2xl"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900 mb-3">Limited Time Event</h3>
                 <p class="text-gray-600 leading-relaxed">Exclusive Valentine's week event with special activities and surprise matches.</p>
@@ -391,7 +391,7 @@
         
         <div class="text-center mt-12">
             <a href="{{ route('couples') }}" class="inline-flex items-center bg-white text-valentine-600 px-8 py-4 rounded-2xl font-bold hover:bg-yellow-300 hover:text-valentine-700 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
-                <i class="fas fa-heart-circle-check mr-3"></i>
+                <i class="fas fa-check-circle mr-3"></i>
                 View All Success Stories
                 <i class="fas fa-arrow-right ml-3"></i>
             </a>

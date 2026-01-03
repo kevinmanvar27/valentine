@@ -8,7 +8,7 @@
     <div class="mb-8 animate-fade-in-up">
         <h1 class="text-3xl font-bold">
             <span class="gradient-text">
-                <i class="fas fa-heart-circle-check mr-2"></i> Successful Couples
+                <i class="fas fa-check-circle mr-2"></i> Successful Couples
             </span>
         </h1>
         <p class="text-gray-400 mt-2">All successfully matched couples</p>
@@ -112,7 +112,7 @@
                                     {{ $couple->user1->location }}
                                 </p>
                                 <p class="text-sm text-gray-500 flex items-center">
-                                    <i class="fas fa-calendar-heart text-rose-400 mr-2 w-4"></i> 
+                                    <i class="fas fa-calendar-alt text-rose-400 mr-2 w-4"></i> 
                                     Coupled: {{ $couple->coupled_at->format('d M Y') }}
                                 </p>
                             </div>
