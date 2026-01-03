@@ -3,11 +3,11 @@
 @section('title', 'Terms of Service - Valentine Partner Finder')
 
 @section('content')
-<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-valentine-100 via-pink-50 to-purple-100">
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <div class="text-center mb-10">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-valentine-500 to-pink-500 rounded-2xl mb-6 shadow-xl">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-rose-500 rounded-2xl mb-6 shadow-sm">
                 <i class="fas fa-file-contract text-white text-2xl"></i>
             </div>
             <h1 class="text-4xl font-bold text-gray-900 mb-4">Terms of Service</h1>

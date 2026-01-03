@@ -3,174 +3,167 @@
 @section('title', 'Complete Payment - Valentine Partner Finder')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-valentine-100 via-pink-100 to-purple-100 relative overflow-hidden">
-    <!-- Decorative Background -->
-    <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute top-20 left-10 w-72 h-72 bg-valentine-300 rounded-full blur-3xl opacity-50 animate-float"></div>
-        <div class="absolute bottom-20 right-10 w-96 h-96 bg-pink-300 rounded-full blur-3xl opacity-50 animate-float-slow"></div>
-        <div class="absolute top-1/3 right-1/4 w-64 h-64 bg-yellow-200 rounded-full blur-3xl opacity-40 animate-float" style="animation-delay: 2s;"></div>
-    </div>
+<!-- Clean background - no animated decorations -->
+<div class="min-h-screen bg-gray-50">
     
-    <!-- Header -->
-    <div class="gradient-bg-animated relative overflow-hidden">
-        <div class="absolute inset-0 bg-black/10"></div>
-        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="flex items-center justify-between">
-                <div>
-                    <a href="{{ route('user.dashboard') }}" class="text-white/80 hover:text-white transition-colors mb-4 inline-flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
-                    </a>
-                    <h1 class="text-3xl md:text-4xl font-bold text-white flex items-center">
-                        <i class="fas fa-crown mr-4 text-yellow-300"></i>
-                        Complete Payment
-                    </h1>
-                    <p class="text-white/80 mt-2">Unlock all premium features and start matching!</p>
-                </div>
+    <!-- Header - Clean rose background -->
+    <div class="bg-rose-500">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div>
+                <a href="{{ route('user.dashboard') }}" class="text-white/80 hover:text-white transition-colors mb-3 inline-flex items-center text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                </a>
+                <h1 class="text-2xl md:text-3xl font-bold text-white flex items-center font-serif">
+                    <i class="fas fa-crown mr-3 text-amber-300"></i>
+                    Complete Payment
+                </h1>
+                <p class="text-white/80 mt-1">Unlock all premium features and start matching!</p>
             </div>
         </div>
     </div>
     
-    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid lg:grid-cols-2 gap-8">
+    <!-- Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid lg:grid-cols-2 gap-6">
             <!-- Payment Details -->
-            <div class="space-y-6">
-                <!-- Amount Card -->
-                <div class="bg-gradient-to-br from-valentine-500 via-pink-500 to-purple-500 rounded-3xl shadow-xl p-8 animate-fade-in relative overflow-hidden">
-                    <div class="relative text-center mb-8">
-                        <span class="text-white/80 text-lg">Registration Fee</span>
-                        <div class="text-5xl font-bold text-white mt-2">
-                            ₹<span class="text-yellow-300">{{ $registrationFee }}</span>
+            <div class="space-y-5">
+                <!-- Amount Card - Clean rose card -->
+                <div class="bg-rose-500 rounded-2xl shadow-sm p-6">
+                    <div class="text-center mb-6">
+                        <span class="text-white/80">Registration Fee</span>
+                        <div class="text-4xl font-bold text-white mt-2 font-serif">
+                            ₹<span class="text-amber-300">{{ $registrationFee }}</span>
                         </div>
-                        <p class="text-white/70 mt-2">One-time payment</p>
+                        <p class="text-white/70 mt-1 text-sm">One-time payment</p>
                     </div>
                     
                     <!-- Features Included -->
-                    <div class="relative space-y-4">
-                        <h3 class="font-bold text-white mb-4">What you'll get:</h3>
-                        <div class="flex items-center text-white/90">
-                            <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-yellow-300 text-sm"></i>
+                    <div class="space-y-3">
+                        <h3 class="font-semibold text-white mb-3">What you'll get:</h3>
+                        <div class="flex items-center text-white/90 text-sm">
+                            <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-amber-300 text-xs"></i>
                             </div>
                             <span>Unlimited match suggestions</span>
                         </div>
-                        <div class="flex items-center text-white/90">
-                            <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-yellow-300 text-sm"></i>
+                        <div class="flex items-center text-white/90 text-sm">
+                            <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-amber-300 text-xs"></i>
                             </div>
                             <span>View who liked your profile</span>
                         </div>
-                        <div class="flex items-center text-white/90">
-                            <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-yellow-300 text-sm"></i>
+                        <div class="flex items-center text-white/90 text-sm">
+                            <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-amber-300 text-xs"></i>
                             </div>
                             <span>Unlock contact details of matches</span>
                         </div>
-                        <div class="flex items-center text-white/90">
-                            <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-yellow-300 text-sm"></i>
+                        <div class="flex items-center text-white/90 text-sm">
+                            <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-amber-300 text-xs"></i>
                             </div>
                             <span>Priority profile visibility</span>
                         </div>
-                        <div class="flex items-center text-white/90">
-                            <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-yellow-300 text-sm"></i>
+                        <div class="flex items-center text-white/90 text-sm">
+                            <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-amber-300 text-xs"></i>
                             </div>
                             <span>Access for entire Valentine's week</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Trust Badges -->
-                <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-lg p-6 border-2 border-green-200">
-                    <div class="flex items-center justify-center gap-6 text-green-700">
-                        <div class="flex items-center">
-                            <i class="fas fa-shield-alt text-green-500 mr-2"></i>
-                            <span class="text-sm font-medium">Secure Payment</span>
+                <!-- Trust Badges - Clean card -->
+                <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                    <div class="flex items-center justify-center gap-6 text-emerald-700">
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-shield-alt text-emerald-500 mr-2"></i>
+                            <span class="font-medium">Secure Payment</span>
                         </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-lock text-green-500 mr-2"></i>
-                            <span class="text-sm font-medium">SSL Encrypted</span>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-lock text-emerald-500 mr-2"></i>
+                            <span class="font-medium">SSL Encrypted</span>
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Payment Methods -->
-            <div class="space-y-6" x-data="{ activeTab: '{{ $razorpayEnabled ? 'razorpay' : 'upi' }}' }">
+            <div class="space-y-5" x-data="{ activeTab: '{{ $razorpayEnabled ? 'razorpay' : 'upi' }}' }">
                 
                 @if($razorpayEnabled && $googlePayEnabled)
-                <!-- Payment Method Tabs -->
-                <div class="bg-white rounded-2xl p-2 shadow-lg flex gap-2">
+                <!-- Payment Method Tabs - Clean design -->
+                <div class="bg-white rounded-xl p-1.5 shadow-sm border border-gray-100 flex gap-1.5">
                     <button @click="activeTab = 'razorpay'" 
-                        :class="activeTab === 'razorpay' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                        class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center">
+                        :class="activeTab === 'razorpay' ? 'bg-rose-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'"
+                        class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center text-sm">
                         <i class="fas fa-credit-card mr-2"></i> Razorpay
                     </button>
                     <button @click="activeTab = 'upi'" 
-                        :class="activeTab === 'upi' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                        class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center">
+                        :class="activeTab === 'upi' ? 'bg-emerald-500 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'"
+                        class="flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center text-sm">
                         <i class="fas fa-mobile-alt mr-2"></i> UPI / GPay
                     </button>
                 </div>
                 @endif
                 
                 @if($razorpayEnabled)
-                <!-- Razorpay Payment -->
-                <div x-show="activeTab === 'razorpay'" x-transition class="bg-gradient-to-br from-white to-blue-50 rounded-3xl shadow-xl p-8 border-2 border-blue-200 animate-fade-in">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                <!-- Razorpay Payment - Clean card -->
+                <div x-show="activeTab === 'razorpay'" x-transition class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-900 mb-5 flex items-center">
+                        <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
                             <i class="fas fa-credit-card text-blue-500"></i>
                         </div>
                         Pay with Razorpay
                     </h2>
                     
-                    <div class="text-center mb-6">
-                        <p class="text-gray-600 mb-4">Pay securely using UPI, Cards, Net Banking, or Wallets</p>
-                        <div class="flex justify-center gap-4 mb-6">
-                            <img src="https://cdn.razorpay.com/static/assets/logo/payment.svg" alt="Payment Methods" class="h-8">
+                    <div class="text-center mb-5">
+                        <p class="text-gray-600 text-sm mb-4">Pay securely using UPI, Cards, Net Banking, or Wallets</p>
+                        <div class="flex justify-center gap-4 mb-5">
+                            <img src="https://cdn.razorpay.com/static/assets/logo/payment.svg" alt="Payment Methods" class="h-7">
                         </div>
                     </div>
                     
-                    <button id="razorpayBtn" class="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center text-lg transition-all duration-300 shadow-lg hover:shadow-xl">
+                    <button id="razorpayBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center transition-colors">
                         <i class="fas fa-lock mr-2"></i> Pay ₹{{ $registrationFee }} Securely
                     </button>
                     
                     <p class="text-center text-gray-500 text-sm mt-4">
-                        <i class="fas fa-bolt text-yellow-500 mr-1"></i> Instant verification - No waiting!
+                        <i class="fas fa-bolt text-amber-500 mr-1"></i> Instant verification - No waiting!
                     </p>
                 </div>
                 @endif
                 
                 @if($googlePayEnabled)
-                <!-- UPI / Google Pay Payment -->
-                <div x-show="activeTab === 'upi'" x-transition class="bg-gradient-to-br from-white to-green-50 rounded-3xl shadow-xl p-8 border-2 border-green-200 animate-fade-in">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-4">
-                            <i class="fas fa-qrcode text-green-500"></i>
+                <!-- UPI / Google Pay Payment - Clean card -->
+                <div x-show="activeTab === 'upi'" x-transition class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-900 mb-5 flex items-center">
+                        <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-qrcode text-emerald-500"></i>
                         </div>
                         Pay via UPI / Google Pay
                     </h2>
                     
                     <!-- QR Code -->
-                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 text-center border border-green-100">
-                        <div class="bg-white rounded-xl p-4 inline-block shadow-lg mb-4 border border-green-100">
+                    <div class="bg-gray-50 rounded-xl p-5 mb-5 text-center border border-gray-100">
+                        <div class="bg-white rounded-lg p-3 inline-block shadow-sm mb-3 border border-gray-100">
                             @if($paymentQR)
-                                <img src="{{ Storage::url($paymentQR) }}" alt="Payment QR Code" class="w-48 h-48 mx-auto">
+                                <img src="{{ Storage::url($paymentQR) }}" alt="Payment QR Code" class="w-44 h-44 mx-auto">
                             @else
-                                <div class="w-48 h-48 bg-gray-100 flex items-center justify-center rounded-lg">
-                                    <i class="fas fa-qrcode text-gray-300 text-6xl"></i>
+                                <div class="w-44 h-44 bg-gray-100 flex items-center justify-center rounded-lg">
+                                    <i class="fas fa-qrcode text-gray-300 text-5xl"></i>
                                 </div>
                             @endif
                         </div>
-                        <p class="text-gray-600 text-sm">Scan with any UPI app</p>
+                        <p class="text-gray-500 text-sm">Scan with any UPI app</p>
                     </div>
                     
                     <!-- UPI ID -->
-                    <div class="bg-green-50 rounded-xl p-4 mb-6 border border-green-100">
-                        <p class="text-green-800 text-sm font-medium mb-2">Or pay directly to UPI ID:</p>
-                        <div class="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-green-100">
-                            <span class="font-mono text-gray-900" id="upiId">{{ $paymentUPI }}</span>
-                            <button type="button" onclick="copyUPI()" class="text-green-600 hover:text-green-700 transition-colors">
+                    <div class="bg-emerald-50 rounded-xl p-4 mb-5 border border-emerald-100">
+                        <p class="text-emerald-800 text-sm font-medium mb-2">Or pay directly to UPI ID:</p>
+                        <div class="flex items-center justify-between bg-white rounded-lg px-4 py-2.5 border border-emerald-100">
+                            <span class="font-mono text-gray-900 text-sm" id="upiId">{{ $paymentUPI }}</span>
+                            <button type="button" onclick="copyUPI()" class="text-emerald-600 hover:text-emerald-700 transition-colors">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -181,14 +174,14 @@
                         @csrf
                         
                         <!-- Screenshot Upload -->
-                        <div class="mb-6">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Payment Screenshot</label>
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Payment Screenshot</label>
                             <div class="relative group">
-                                <div id="screenshotPreview" class="w-full h-48 rounded-xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center transition-all duration-300 group-hover:border-green-400 cursor-pointer">
+                                <div id="screenshotPreview" class="w-full h-40 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center transition-all group-hover:border-rose-300 cursor-pointer">
                                     <div class="text-center">
-                                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                                        <p class="text-gray-500">Click to upload screenshot</p>
-                                        <p class="text-gray-400 text-sm mt-1">Max 5MB, JPG/PNG</p>
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-gray-500 text-sm">Click to upload screenshot</p>
+                                        <p class="text-gray-400 text-xs mt-1">Max 5MB, JPG/PNG</p>
                                     </div>
                                 </div>
                                 <input type="file" name="payment_screenshot" id="screenshotInput" accept="image/*" required class="absolute inset-0 opacity-0 cursor-pointer">
@@ -199,15 +192,15 @@
                         </div>
                         
                         <!-- Submit Button -->
-                        <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center text-lg transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center transition-colors">
                             <i class="fas fa-paper-plane mr-2"></i> Submit Payment
                         </button>
                     </form>
                     
                     <!-- Help Text -->
-                    <div class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-                        <p class="text-yellow-800 text-sm">
-                            <i class="fas fa-clock text-yellow-500 mr-2"></i>
+                    <div class="mt-5 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                        <p class="text-amber-800 text-sm">
+                            <i class="fas fa-clock text-amber-500 mr-2"></i>
                             After submitting, your payment will be verified within 24 hours.
                         </p>
                     </div>
@@ -216,47 +209,47 @@
                 
                 @if(!$razorpayEnabled && !$googlePayEnabled)
                 <!-- No Payment Method Available -->
-                <div class="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-xl p-8 border-2 border-gray-200 text-center">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-exclamation-triangle text-gray-400 text-2xl"></i>
+                <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 text-center">
+                    <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-700 mb-2">Payment Unavailable</h3>
-                    <p class="text-gray-500">Payment methods are currently being configured. Please check back later or contact support.</p>
+                    <h3 class="text-lg font-bold text-gray-700 mb-2">Payment Unavailable</h3>
+                    <p class="text-gray-500 text-sm">Payment methods are currently being configured. Please check back later or contact support.</p>
                 </div>
                 @endif
             </div>
         </div>
         
         @if($googlePayEnabled)
-        <!-- Payment Instructions -->
-        <div class="mt-8 bg-gradient-to-br from-white to-blue-50 rounded-3xl shadow-xl p-8 border-2 border-blue-200 animate-fade-in" style="animation-delay: 0.2s;">
-            <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center mr-4">
-                    <i class="fas fa-list-ol text-white"></i>
+        <!-- Payment Instructions - Clean card -->
+        <div class="mt-6 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-lg font-bold text-gray-900 mb-5 flex items-center">
+                <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-list-ol text-blue-500"></i>
                 </div>
                 How to Pay via UPI
             </h2>
             
-            <div class="grid md:grid-cols-4 gap-6">
-                <div class="text-center p-4 bg-gradient-to-br from-valentine-50 to-pink-50 rounded-2xl">
-                    <div class="w-12 h-12 bg-gradient-to-br from-valentine-400 to-valentine-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold shadow-lg">1</div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Scan QR Code</h3>
-                    <p class="text-gray-600 text-sm">Open any UPI app and scan the QR code above</p>
+            <div class="grid md:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-rose-50 rounded-xl border border-rose-100">
+                    <div class="w-10 h-10 bg-rose-500 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold">1</div>
+                    <h3 class="font-semibold text-gray-900 mb-1 text-sm">Scan QR Code</h3>
+                    <p class="text-gray-600 text-xs">Open any UPI app and scan the QR code above</p>
                 </div>
-                <div class="text-center p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl">
-                    <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold shadow-lg">2</div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Enter Amount</h3>
-                    <p class="text-gray-600 text-sm">Enter ₹{{ $registrationFee }} and complete payment</p>
+                <div class="text-center p-4 bg-pink-50 rounded-xl border border-pink-100">
+                    <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold">2</div>
+                    <h3 class="font-semibold text-gray-900 mb-1 text-sm">Enter Amount</h3>
+                    <p class="text-gray-600 text-xs">Enter ₹{{ $registrationFee }} and complete payment</p>
                 </div>
-                <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold shadow-lg">3</div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Take Screenshot</h3>
-                    <p class="text-gray-600 text-sm">Screenshot the success page with UTR number</p>
+                <div class="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold">3</div>
+                    <h3 class="font-semibold text-gray-900 mb-1 text-sm">Take Screenshot</h3>
+                    <p class="text-gray-600 text-xs">Screenshot the success page with UTR number</p>
                 </div>
-                <div class="text-center p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl">
-                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold shadow-lg">4</div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Submit Details</h3>
-                    <p class="text-gray-600 text-sm">Upload screenshot above and submit</p>
+                <div class="text-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold">4</div>
+                    <h3 class="font-semibold text-gray-900 mb-1 text-sm">Submit Details</h3>
+                    <p class="text-gray-600 text-xs">Upload screenshot above and submit</p>
                 </div>
             </div>
         </div>
@@ -278,7 +271,6 @@ document.getElementById('razorpayBtn')?.addEventListener('click', function(e) {
         "description": "Registration Fee",
         "image": "{{ asset('images/logo.png') }}",
         "handler": function (response) {
-            // Send payment details to server for verification
             fetch("{{ route('user.payment.razorpay.verify') }}", {
                 method: 'POST',
                 headers: {
@@ -338,7 +330,7 @@ function copyUPI() {
     if (upiId) {
         navigator.clipboard.writeText(upiId).then(() => {
             const toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fade-in';
+            toast.className = 'fixed bottom-4 right-4 bg-emerald-500 text-white px-5 py-3 rounded-xl shadow-lg z-50';
             toast.innerHTML = '<i class="fas fa-check mr-2"></i>UPI ID copied!';
             document.body.appendChild(toast);
             
