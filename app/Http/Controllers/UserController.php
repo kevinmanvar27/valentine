@@ -40,7 +40,11 @@ class UserController extends Controller
             ->with(['user1', 'user2'])
             ->first();
 
-        return view('user.dashboard', compact('user', 'suggestions', 'matches', 'notifications', 'couple'));
+        // Calculate counts for dashboard display
+        $matchesCount = $matches->count();
+        $suggestionsCount = $suggestions->count();
+
+        return view('user.dashboard', compact('user', 'suggestions', 'matches', 'notifications', 'couple', 'matchesCount', 'suggestionsCount'));
     }
 
     public function showPayment()
@@ -335,6 +339,16 @@ class UserController extends Controller
         // Load the suggested user with all necessary details
         $suggestion->load('suggestedUser');
 
+        // Get first gallery image or fallback to live_image
+        $profileImage = null;
+        if ($suggestion->suggestedUser->gallery_images && is_array($suggestion->suggestedUser->gallery_images) && count($suggestion->suggestedUser->gallery_images) > 0) {
+            // Use first gallery image
+            $profileImage = asset('storage/' . $suggestion->suggestedUser->gallery_images[0]);
+        } elseif ($suggestion->suggestedUser->live_image) {
+            // Fallback to live_image if no gallery images
+            $profileImage = asset('storage/' . $suggestion->suggestedUser->live_image);
+        }
+
         return response()->json([
             'success' => true,
             'suggestion' => [
@@ -348,7 +362,7 @@ class UserController extends Controller
                     'bio' => $suggestion->suggestedUser->bio,
                     'keywords' => $suggestion->suggestedUser->keywords,
                     'instagram_id' => $suggestion->suggestedUser->instagram_id,
-                    'live_image' => $suggestion->suggestedUser->live_image ? asset('storage/' . $suggestion->suggestedUser->live_image) : null,
+                    'live_image' => $profileImage,
                     'is_verified' => $suggestion->suggestedUser->registration_verified ?? false,
                 ]
             ]
