@@ -339,7 +339,7 @@
                             <td class="py-4">
                                 <div class="flex items-center">
                                     <div class="relative">
-                                        <img src="{{ Storage::url($user->live_image) }}" 
+                                        <img src="{{ get_image_url($user->live_image) }}" 
                                             alt="{{ $user->full_name }}"
                                             class="w-11 h-11 rounded-xl object-cover border-2 border-white shadow">
                                         <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white

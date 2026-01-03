@@ -53,7 +53,7 @@
                 </div>
                 
                 <div class="text-center mb-4">
-                    <img src="{{ Storage::url($selectedUser->live_image) }}" 
+                    <img src="{{ get_image_url($selectedUser->live_image) }}" 
                         alt="{{ $selectedUser->full_name }}"
                         class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">
                     <h3 class="font-bold text-xl text-gray-800 mt-3">{{ $selectedUser->full_name }}</h3>
@@ -128,14 +128,15 @@
                             <p class="text-gray-500">No profiles shared yet</p>
                         </div>
                     @else
-                        <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                        <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2" id="shared-profiles-container">
                             @foreach($sharedProfiles as $suggestion)
                                 @if($suggestion->suggestedUser)
-                                    <div class="flex items-center p-3 rounded-xl border 
-                                        @if($suggestion->status === 'accepted') bg-green-50 border-green-200
-                                        @elseif($suggestion->status === 'rejected') bg-red-50 border-red-200
-                                        @else bg-gray-50 border-gray-200 @endif">
-                                        <img src="{{ Storage::url($suggestion->suggestedUser->live_image ?? '') }}" 
+                                    <div class="flex items-center p-3 rounded-xl border suggestion-item" 
+                                        data-suggestion-id="{{ $suggestion->id }}"
+                                        @if($suggestion->status === 'accepted') style="background-color: #f0fdf4; border-color: #bbf7d0;"
+                                        @elseif($suggestion->status === 'rejected') style="background-color: #fef2f2; border-color: #fecaca;"
+                                        @else style="background-color: #f9fafb; border-color: #e5e7eb;" @endif>
+                                        <img src="{{ get_image_url($suggestion->suggestedUser->live_image ?? '') }}" 
                                             alt="{{ $suggestion->suggestedUser->full_name }}"
                                             class="w-12 h-12 rounded-full object-cover mr-3 border-2 border-white shadow">
                                         <div class="flex-1 min-w-0">
@@ -144,21 +145,31 @@
                                                 {{ $suggestion->suggestedUser->age }}y • {{ $suggestion->suggestedUser->location }}
                                             </p>
                                         </div>
-                                        <div class="text-right ml-2">
-                                            @if($suggestion->status === 'accepted')
-                                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                                    <i class="fas fa-heart mr-1"></i>Accepted
-                                                </span>
-                                            @elseif($suggestion->status === 'rejected')
-                                                <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-                                                    <i class="fas fa-times mr-1"></i>Rejected
-                                                </span>
-                                            @else
-                                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                                    <i class="fas fa-clock mr-1"></i>Pending
-                                                </span>
+                                        <div class="text-right ml-2 flex items-center gap-2">
+                                            <div>
+                                                @if($suggestion->status === 'accepted')
+                                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                                        <i class="fas fa-heart mr-1"></i>Accepted
+                                                    </span>
+                                                @elseif($suggestion->status === 'rejected')
+                                                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                                                        <i class="fas fa-times mr-1"></i>Rejected
+                                                    </span>
+                                                @else
+                                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                                                        <i class="fas fa-clock mr-1"></i>Pending
+                                                    </span>
+                                                @endif
+                                                <p class="text-xs text-gray-400 mt-1">{{ $suggestion->created_at->diffForHumans() }}</p>
+                                            </div>
+                                            @if($suggestion->status === 'pending')
+                                                <button type="button" 
+                                                    class="revoke-suggestion-btn w-8 h-8 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center"
+                                                    data-suggestion-id="{{ $suggestion->id }}"
+                                                    title="Revoke this suggestion">
+                                                    <i class="fas fa-trash-alt text-xs"></i>
+                                                </button>
                                             @endif
-                                            <p class="text-xs text-gray-400 mt-1">{{ $suggestion->created_at->diffForHumans() }}</p>
                                         </div>
                                     </div>
                                 @endif
@@ -305,7 +316,7 @@
                             
                             <!-- User Image -->
                             <div class="relative group">
-                                <img src="{{ Storage::url($match->live_image) }}" 
+                                <img src="{{ get_image_url($match->live_image) }}" 
                                     alt="{{ $match->full_name }}"
                                     class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -592,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // AJAX Share Profile functionality
+    // AJAX Share Profile functionality with real-time append
     document.querySelectorAll('.share-profile-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -623,8 +634,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     suggested_user_id: suggestedUserId
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Server response:', data);
                 button.classList.remove('loading');
                 
                 if (data.success) {
@@ -654,14 +671,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                     
+                    // Real-time append: Add to shared profiles list
+                    if (data.suggestion) {
+                        console.log('Appending shared profile:', data.suggestion);
+                        appendSharedProfile(data.suggestion);
+                    } else {
+                        console.warn('No suggestion data received from server');
+                    }
+                    
                     // Add "Shared" badge to the card if not already there
                     const card = button.closest('.match-card');
                     const imageContainer = card.querySelector('.relative.group');
-                    if (!imageContainer.querySelector('.bg-yellow-500\\/90')) {
-                        const badge = document.createElement('div');
-                        badge.className = 'absolute top-3 left-3';
-                        badge.innerHTML = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/90 text-white"><i class="fas fa-check mr-1"></i>Shared</span>';
-                        imageContainer.appendChild(badge);
+                    const badgeContainer = imageContainer.querySelector('.absolute.top-3.left-3');
+                    if (badgeContainer && !badgeContainer.querySelector('.bg-yellow-500\\/90')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/90 text-white';
+                        badge.innerHTML = '<i class="fas fa-check mr-1"></i>Shared';
+                        badgeContainer.appendChild(badge);
                     }
                     
                 } else {
@@ -674,9 +700,191 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.classList.remove('loading');
                 btnText.textContent = originalText;
                 showFlashMessage('error', 'An error occurred. Please try again.');
-                console.error('Error:', error);
+                console.error('Error sharing profile:', error);
             });
         });
+    });
+    
+    // Function to append shared profile to the list (real-time)
+    function appendSharedProfile(suggestion) {
+        console.log('appendSharedProfile called with:', suggestion);
+        
+        const sharedList = document.getElementById('shared-profiles-list');
+        const noSharedMsg = document.getElementById('no-shared-profiles');
+        const sharedCount = document.getElementById('shared-count');
+        
+        if (!sharedList) {
+            console.error('shared-profiles-list element not found');
+            return;
+        }
+        
+        // Hide "no profiles" message if visible
+        if (noSharedMsg) {
+            console.log('Removing no-shared-profiles message');
+            noSharedMsg.remove();
+        }
+        
+        // Get or create container
+        let container = document.getElementById('shared-profiles-container');
+        if (!container) {
+            console.log('Creating new shared-profiles-container');
+            // Clear the sharedList first
+            sharedList.innerHTML = '';
+            
+            container = document.createElement('div');
+            container.id = 'shared-profiles-container';
+            container.className = 'space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2';
+            sharedList.appendChild(container);
+        } else {
+            console.log('Using existing shared-profiles-container');
+        }
+        
+        // Create new profile element
+        const profileDiv = document.createElement('div');
+        profileDiv.className = 'flex items-center p-3 rounded-xl border suggestion-item animate-fade-in-up';
+        profileDiv.dataset.suggestionId = suggestion.id;
+        profileDiv.style.backgroundColor = '#f9fafb';
+        profileDiv.style.borderColor = '#e5e7eb';
+        
+        const imageUrl = suggestion.suggested_user.live_image 
+            ? '/storage/' + suggestion.suggested_user.live_image 
+            : '{{ asset("images/default-avatar.png") }}';
+        
+        profileDiv.innerHTML = `
+            <img src="${imageUrl}" 
+                alt="${suggestion.suggested_user.full_name}"
+                class="w-12 h-12 rounded-full object-cover mr-3 border-2 border-white shadow">
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-800 truncate">${suggestion.suggested_user.full_name}</p>
+                <p class="text-xs text-gray-500">
+                    ${suggestion.suggested_user.age}y • ${suggestion.suggested_user.location}
+                </p>
+            </div>
+            <div class="text-right ml-2 flex items-center gap-2">
+                <div>
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                        <i class="fas fa-clock mr-1"></i>Pending
+                    </span>
+                    <p class="text-xs text-gray-400 mt-1">${suggestion.created_at}</p>
+                </div>
+                <button type="button" 
+                    class="revoke-suggestion-btn w-8 h-8 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center"
+                    data-suggestion-id="${suggestion.id}"
+                    title="Revoke this suggestion">
+                    <i class="fas fa-trash-alt text-xs"></i>
+                </button>
+            </div>
+        `;
+        
+        // Prepend to top of list
+        container.insertBefore(profileDiv, container.firstChild);
+        console.log('Profile appended to DOM');
+        
+        // Update count
+        const currentCount = parseInt(sharedCount.textContent) || 0;
+        sharedCount.textContent = currentCount + 1;
+        console.log('Updated count from', currentCount, 'to', currentCount + 1);
+        
+        // Attach revoke handler to the new button
+        const revokeBtn = profileDiv.querySelector('.revoke-suggestion-btn');
+        if (revokeBtn) {
+            revokeBtn.addEventListener('click', handleRevokeSuggestion);
+            console.log('Revoke handler attached');
+        }
+    }
+    
+    // AJAX Revoke Suggestion functionality
+    function handleRevokeSuggestion(e) {
+        e.preventDefault();
+        
+        const button = this;
+        const suggestionId = button.dataset.suggestionId;
+        const suggestionItem = button.closest('.suggestion-item');
+        
+        if (!confirm('Are you sure you want to revoke this profile suggestion?')) {
+            return;
+        }
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+        
+        // Make AJAX request
+        fetch(`{{ url('admin/matchmaking/revoke') }}/${suggestionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showFlashMessage('success', data.message || 'Suggestion revoked successfully!');
+                
+                // Remove the item with animation
+                suggestionItem.style.opacity = '0';
+                suggestionItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    suggestionItem.remove();
+                    
+                    // Update count
+                    const sharedCount = document.getElementById('shared-count');
+                    const currentCount = parseInt(sharedCount.textContent) || 0;
+                    sharedCount.textContent = Math.max(0, currentCount - 1);
+                    
+                    // Check if list is empty
+                    const container = document.getElementById('shared-profiles-container');
+                    if (container && container.children.length === 0) {
+                        const sharedList = document.getElementById('shared-profiles-list');
+                        sharedList.innerHTML = `
+                            <div class="text-center py-8" id="no-shared-profiles">
+                                <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
+                                <p class="text-gray-500">No profiles shared yet</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+                
+                // Update slots counter
+                if (data.pending_count !== undefined) {
+                    const slotsCounter = document.getElementById('slots-counter');
+                    const slotsWarning = document.getElementById('slots-warning');
+                    
+                    slotsCounter.textContent = data.pending_count + '/5';
+                    
+                    if (data.pending_count < 5) {
+                        slotsCounter.classList.remove('text-red-600');
+                        slotsCounter.classList.add('text-green-600');
+                        slotsWarning.classList.add('hidden');
+                        
+                        // Re-enable all share buttons
+                        document.querySelectorAll('.share-profile-btn').forEach(function(b) {
+                            b.disabled = false;
+                            b.classList.remove('opacity-50', 'cursor-not-allowed');
+                        });
+                    }
+                }
+            } else {
+                // Show error message
+                showFlashMessage('error', data.message || 'Failed to revoke suggestion.');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
+            }
+        })
+        .catch(error => {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
+            showFlashMessage('error', 'An error occurred. Please try again.');
+            console.error('Error:', error);
+        });
+    }
+    
+    // Attach revoke handlers to existing buttons
+    document.querySelectorAll('.revoke-suggestion-btn').forEach(function(btn) {
+        btn.addEventListener('click', handleRevokeSuggestion);
     });
     
     // Flash message helper function

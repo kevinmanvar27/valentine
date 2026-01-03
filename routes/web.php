@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified.user'])->prefix('user')->name('user.')->gro
     Route::post('/payment/razorpay/verify', [UserController::class, 'verifyRazorpayPayment'])->name('payment.razorpay.verify')->withoutMiddleware('verified.user');
     
     Route::get('/suggestions', [UserController::class, 'suggestions'])->name('suggestions');
+    Route::get('/suggestions/{suggestion}/details', [UserController::class, 'getSuggestionDetails'])->name('suggestions.details');
     Route::post('/suggestions/{suggestion}/respond', [UserController::class, 'respondToSuggestion'])->name('suggestions.respond');
     
     Route::get('/matches', [UserController::class, 'matches'])->name('matches');

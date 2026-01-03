@@ -145,8 +145,9 @@
                             
                             <!-- Action Buttons -->
                             <div class="flex gap-3">
-                                <form action="{{ route('user.like', $suggestion->id) }}" method="POST" class="flex-1">
+                                <form action="{{ route('user.suggestions.respond', $suggestion->id) }}" method="POST" class="flex-1">
                                     @csrf
+                                    <input type="hidden" name="response" value="accepted">
                                     <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center">
                                         <i class="fas fa-heart mr-2"></i>Like
                                     </button>

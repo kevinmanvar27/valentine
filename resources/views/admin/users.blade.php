@@ -308,7 +308,7 @@
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="relative">
-                                        <img src="{{ Storage::url($user->live_image) }}" 
+                                        <img src="{{ get_image_url($user->live_image) }}" 
                                             alt="{{ $user->full_name }}"
                                             class="user-avatar w-12 h-12 rounded-full object-cover shadow-md">
                                         <!-- Gender indicator -->

@@ -207,11 +207,16 @@ class AdminController extends Controller
                     $matchQuery->where('gender', $oppositeGender);
                 }
 
-                // Apply location filter ONLY if manually selected (not auto-select user's location)
+                // AUTO-APPLY USER'S LOCATION FILTER (unless manually overridden)
                 if ($request->filled('filter_location')) {
+                    // Manual filter selected
                     $matchQuery->where('location', 'like', "%{$request->filter_location}%");
+                } else {
+                    // Auto-apply user's city location
+                    if (!empty($selectedUser->location)) {
+                        $matchQuery->where('location', 'like', "%{$selectedUser->location}%");
+                    }
                 }
-                // If no location filter, show ALL locations
 
                 // Apply multiple keywords filter
                 $filterKeywords = $request->input('filter_keywords', []);
@@ -222,10 +227,6 @@ class AdminController extends Controller
                         }
                     });
                 }
-                // If no keywords filter, show ALL (don't auto-apply user's expected keywords)
-
-                // NOTE: We do NOT exclude already shared profiles anymore
-                // This allows sharing the same profile to multiple users
 
                 $potentialMatches = $matchQuery->latest()->get();
             }
@@ -250,6 +251,7 @@ class AdminController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
+        $suggestedUser = User::findOrFail($request->suggested_user_id);
         
         // Check if user can receive more suggestions (max 5 pending)
         $pendingCount = $user->sentSuggestions()->where('status', 'pending')->count();
@@ -281,32 +283,73 @@ class AdminController extends Controller
             return back()->with('error', 'This profile is already pending for this user.');
         }
 
-        ProfileSuggestion::create([
+        // Create suggestion for User A to see User B's profile
+        $suggestion = ProfileSuggestion::create([
             'user_id' => $request->user_id,
             'suggested_user_id' => $request->suggested_user_id,
             'status' => 'pending',
         ]);
 
-        // Notify user
+        // Notify User A (receiver) with actionable notification
         Notification::create([
             'user_id' => $request->user_id,
             'title' => 'New Profile Suggestion',
-            'message' => 'You have received a new profile suggestion. Check it out!',
-            'type' => 'info',
+            'message' => "We have a special profile suggestion for you: {$suggestedUser->full_name}. Check it out and respond!",
+            'type' => 'profile_suggestion',
+            'related_id' => $suggestion->id,
+            'related_type' => 'profile_suggestion',
         ]);
+
+        // Create reverse suggestion for User B to see User A's profile (bidirectional)
+        $reverseSuggestion = ProfileSuggestion::firstOrCreate(
+            [
+                'user_id' => $request->suggested_user_id,
+                'suggested_user_id' => $request->user_id,
+            ],
+            [
+                'status' => 'pending',
+            ]
+        );
+
+        // Notify User B (suggested user) that their profile was shared
+        if ($reverseSuggestion->wasRecentlyCreated) {
+            Notification::create([
+                'user_id' => $request->suggested_user_id,
+                'title' => 'Profile Shared',
+                'message' => "Your profile has been shared with {$user->full_name}. Check out their profile and respond!",
+                'type' => 'profile_suggestion',
+                'related_id' => $reverseSuggestion->id,
+                'related_type' => 'profile_suggestion',
+            ]);
+        }
 
         $newPendingCount = $user->sentSuggestions()->where('status', 'pending')->count();
 
         if ($request->expectsJson()) {
+            // Return the newly created suggestion with full user data for real-time append
+            $suggestion->load('suggestedUser');
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Profile suggestion sent successfully!',
-                'pending_count' => $newPendingCount
+                'message' => 'Profiles shared successfully! Both users have been notified.',
+                'pending_count' => $newPendingCount,
+                'suggestion' => [
+                    'id' => $suggestion->id,
+                    'status' => $suggestion->status,
+                    'created_at' => $suggestion->created_at->diffForHumans(),
+                    'suggested_user' => [
+                        'id' => $suggestedUser->id,
+                        'full_name' => $suggestedUser->full_name,
+                        'age' => $suggestedUser->age,
+                        'location' => $suggestedUser->location,
+                        'live_image' => $suggestedUser->live_image,
+                    ]
+                ]
             ]);
         }
 
         return redirect()->route('admin.matchmaking', ['user_id' => $request->user_id])
-            ->with('success', 'Profile suggestion sent successfully!');
+            ->with('success', 'Profiles shared successfully! Both users have been notified.');
     }
 
     public function revokeSuggestion(ProfileSuggestion $suggestion)
@@ -323,6 +366,16 @@ class AdminController extends Controller
         }
 
         $userId = $suggestion->user_id;
+        $suggestionId = $suggestion->id;
+        
+        // Notify user about revocation
+        Notification::create([
+            'user_id' => $userId,
+            'title' => 'Profile Suggestion Revoked',
+            'message' => 'A profile suggestion has been revoked by admin.',
+            'type' => 'info',
+        ]);
+        
         $suggestion->delete();
 
         if (request()->expectsJson()) {
@@ -334,7 +387,8 @@ class AdminController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Suggestion revoked successfully.',
-                'pending_count' => $pendingCount
+                'pending_count' => $pendingCount,
+                'suggestion_id' => $suggestionId
             ]);
         }
 

@@ -139,4 +139,41 @@ class User extends Authenticatable
     {
         return $this->getActiveSuggestionsCount() < 5;
     }
+
+    /**
+     * Get the URL for the live image
+     */
+    public function getLiveImageUrlAttribute(): ?string
+    {
+        if (!$this->live_image) {
+            return null;
+        }
+
+        // Check if it's already a full URL (base64 or external)
+        if (str_starts_with($this->live_image, 'data:') || str_starts_with($this->live_image, 'http')) {
+            return $this->live_image;
+        }
+
+        // Otherwise, use Storage::url
+        return \Storage::url($this->live_image);
+    }
+
+    /**
+     * Get URLs for all gallery images
+     */
+    public function getGalleryImageUrlsAttribute(): array
+    {
+        if (!$this->gallery_images || !is_array($this->gallery_images)) {
+            return [];
+        }
+
+        return array_map(function ($image) {
+            // Check if it's already a full URL
+            if (str_starts_with($image, 'http') || str_starts_with($image, 'data:')) {
+                return $image;
+            }
+            // Otherwise, use Storage::url
+            return \Storage::url($image);
+        }, $this->gallery_images);
+    }
 }

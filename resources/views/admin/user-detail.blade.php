@@ -172,6 +172,21 @@
 </style>
 
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="mb-6 animate-fade-in-up bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
+            <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
+            <span class="font-medium">{{ session('success') }}</span>
+        </div>
+    @endif
+    
+    @if(session('error'))
+        <div class="mb-6 animate-fade-in-up bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
+            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+            <span class="font-medium">{{ session('error') }}</span>
+        </div>
+    @endif
+    
     <!-- Back Button -->
     <div class="mb-6 animate-fade-in-up">
         <a href="{{ route('admin.users') }}" class="back-link inline-flex items-center gap-2 text-rose-600 hover:text-rose-700 font-medium">
@@ -187,10 +202,17 @@
         <div class="lg:col-span-1 space-y-6">
             <div class="glass-card rounded-2xl shadow-xl overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s;">
                 <!-- Profile Image -->
-                <div class="profile-image-container relative">
-                    <img src="{{ Storage::url($user->live_image) }}" 
+                <div class="profile-image-container relative cursor-pointer group" onclick="openLightbox(0, ['{{ get_image_url($user->live_image) }}'])">
+                    <img src="{{ get_image_url($user->live_image) }}" 
                         alt="{{ $user->full_name }}"
                         class="w-full h-72 object-cover">
+                    
+                    <!-- Hover overlay -->
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 bg-white/90 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition-opacity">
+                            <i class="fas fa-expand mr-1"></i> Click to view full size
+                        </span>
+                    </div>
                     
                     <!-- Status Badge -->
                     <div class="absolute top-4 right-4 z-10">
@@ -356,11 +378,18 @@
                             <i class="fas fa-images text-white text-sm"></i>
                         </span>
                         Gallery
+                        <span class="ml-auto text-xs text-gray-500">{{ count($user->gallery_images) }} {{ count($user->gallery_images) === 1 ? 'photo' : 'photos' }}</span>
                     </h3>
                     <div class="grid grid-cols-3 gap-3">
-                        @foreach($user->gallery_images as $image)
-                            <div class="relative overflow-hidden rounded-xl">
-                                <img src="{{ Storage::url($image) }}" alt="Gallery" class="gallery-image w-full h-24 object-cover cursor-pointer">
+                        @foreach($user->gallery_images as $index => $image)
+                            <div class="relative overflow-hidden rounded-xl group">
+                                <img src="{{ get_image_url($image) }}" 
+                                     alt="Gallery Image {{ $index + 1 }}" 
+                                     class="gallery-image w-full h-24 object-cover cursor-pointer"
+                                     onclick="openLightbox({{ $index }}, {{ json_encode(array_map(fn($img) => get_image_url($img), $user->gallery_images)) }})">
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                                    <i class="fas fa-search-plus text-white opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -375,16 +404,22 @@
                     </span>
                     Send Notification
                 </h3>
-                <form action="{{ route('admin.notifications.send') }}" method="POST" class="space-y-4">
+                <form action="{{ route('admin.notifications.send') }}" method="POST" class="space-y-4" id="notification-form">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $user->id }}">
                     <div>
                         <input type="text" name="title" placeholder="Notification title..." required
-                            class="input-modern w-full px-4 py-3 rounded-xl bg-white focus:outline-none">
+                            class="input-modern w-full px-4 py-3 rounded-xl bg-white focus:outline-none" maxlength="255">
+                        @error('title')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <textarea name="message" rows="3" placeholder="Write your message..." required
                             class="input-modern w-full px-4 py-3 rounded-xl bg-white focus:outline-none resize-none"></textarea>
+                        @error('message')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <select name="type" class="input-modern w-full px-4 py-3 rounded-xl bg-white focus:outline-none appearance-none cursor-pointer">
@@ -393,8 +428,11 @@
                             <option value="warning">⚠️ Warning</option>
                             <option value="error">❌ Error</option>
                         </select>
+                        @error('type')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
-                    <button type="submit" class="btn-gradient w-full text-white py-3 rounded-xl font-semibold shadow-lg">
+                    <button type="submit" class="btn-gradient w-full text-white py-3 rounded-xl font-semibold shadow-lg" id="send-notification-btn">
                         <i class="fas fa-paper-plane mr-2"></i> Send Notification
                     </button>
                 </form>
@@ -418,12 +456,12 @@
                 </h3>
                 
                 @if($user->sentSuggestions->count() > 0)
-                    <div class="space-y-3">
+                    <div class="space-y-3" id="suggestions-container">
                         @foreach($user->sentSuggestions as $suggestion)
                             <div class="suggestion-card flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-rose-50/30 rounded-xl border border-gray-100" id="suggestion-{{ $suggestion->id }}">
                                 <div class="flex items-center gap-4">
                                     <div class="relative">
-                                        <img src="{{ Storage::url($suggestion->suggestedUser->live_image) }}" 
+                                        <img src="{{ get_image_url($suggestion->suggestedUser->live_image) }}" 
                                             alt="{{ $suggestion->suggestedUser->full_name }}"
                                             class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md">
                                         <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs
@@ -496,7 +534,7 @@
                             <div class="suggestion-card flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-indigo-50/30 rounded-xl border border-gray-100">
                                 <div class="flex items-center gap-4">
                                     <div class="relative">
-                                        <img src="{{ Storage::url($suggestion->user->live_image) }}" 
+                                        <img src="{{ get_image_url($suggestion->user->live_image) }}" 
                                             alt="{{ $suggestion->user->full_name }}"
                                             class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md">
                                         <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs
@@ -574,8 +612,9 @@
                         </div>
                         <div class="relative group">
                             <img src="{{ Storage::url($user->registration_payment_screenshot) }}" 
-                                alt="Payment Screenshot" 
-                                class="w-full max-w-md rounded-xl border-2 border-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow">
+                                alt="Registration Payment Screenshot" 
+                                class="w-full max-w-md rounded-xl border-2 border-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                                onclick="openLightbox(0, ['{{ Storage::url($user->registration_payment_screenshot) }}'])">
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-all flex items-center justify-center">
                                 <span class="opacity-0 group-hover:opacity-100 bg-white/90 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition-opacity">
                                     <i class="fas fa-expand mr-1"></i> Click to expand
@@ -623,8 +662,9 @@
                                 @if($payment->payment_screenshot)
                                     <div class="relative group">
                                         <img src="{{ Storage::url($payment->payment_screenshot) }}" 
-                                            alt="Payment Screenshot" 
-                                            class="w-full max-w-sm rounded-xl border-2 border-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow">
+                                            alt="Match Payment Screenshot" 
+                                            class="w-full max-w-sm rounded-xl border-2 border-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                                            onclick="openLightbox(0, ['{{ Storage::url($payment->payment_screenshot) }}'])">
                                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-all flex items-center justify-center">
                                             <span class="opacity-0 group-hover:opacity-100 bg-white/90 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition-opacity">
                                                 <i class="fas fa-expand mr-1"></i> Click to expand
@@ -650,8 +690,100 @@
     </div>
 </div>
 
+<!-- Lightbox Modal -->
+<div id="lightbox-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4" onclick="closeLightbox()">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white hover:text-rose-400 transition-colors z-10">
+        <i class="fas fa-times text-3xl"></i>
+    </button>
+    
+    <button onclick="event.stopPropagation(); previousImage()" class="absolute left-4 text-white hover:text-rose-400 transition-colors z-10">
+        <i class="fas fa-chevron-left text-3xl"></i>
+    </button>
+    
+    <button onclick="event.stopPropagation(); nextImage()" class="absolute right-4 text-white hover:text-rose-400 transition-colors z-10">
+        <i class="fas fa-chevron-right text-3xl"></i>
+    </button>
+    
+    <div class="max-w-5xl max-h-[90vh] w-full" onclick="event.stopPropagation()">
+        <img id="lightbox-image" src="" alt="Gallery Image" class="w-full h-full object-contain rounded-lg shadow-2xl">
+        <div class="text-center mt-4">
+            <span id="lightbox-counter" class="text-white text-sm"></span>
+        </div>
+    </div>
+</div>
+
 <script>
+// Lightbox functionality
+let currentImageIndex = 0;
+let galleryImages = [];
+
+function openLightbox(index, images) {
+    currentImageIndex = index;
+    galleryImages = images;
+    const modal = document.getElementById('lightbox-modal');
+    const image = document.getElementById('lightbox-image');
+    const counter = document.getElementById('lightbox-counter');
+    
+    image.src = galleryImages[currentImageIndex];
+    counter.textContent = `${currentImageIndex + 1} / ${galleryImages.length}`;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    const modal = document.getElementById('lightbox-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function nextImage() {
+    currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+    const image = document.getElementById('lightbox-image');
+    const counter = document.getElementById('lightbox-counter');
+    image.src = galleryImages[currentImageIndex];
+    counter.textContent = `${currentImageIndex + 1} / ${galleryImages.length}`;
+}
+
+function previousImage() {
+    currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+    const image = document.getElementById('lightbox-image');
+    const counter = document.getElementById('lightbox-counter');
+    image.src = galleryImages[currentImageIndex];
+    counter.textContent = `${currentImageIndex + 1} / ${galleryImages.length}`;
+}
+
+// Keyboard navigation for lightbox
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('lightbox-modal');
+    if (!modal.classList.contains('hidden')) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') previousImage();
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Notification form handling
+    const notificationForm = document.getElementById('notification-form');
+    if (notificationForm) {
+        notificationForm.addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('send-notification-btn');
+            if (submitBtn) {
+                const originalContent = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+                submitBtn.disabled = true;
+                
+                // Re-enable after 3 seconds to prevent stuck state
+                setTimeout(() => {
+                    if (submitBtn.disabled) {
+                        submitBtn.innerHTML = originalContent;
+                        submitBtn.disabled = false;
+                    }
+                }, 3000);
+            }
+        });
+    }
+    
     // Revoke suggestion functionality
     document.querySelectorAll('.revoke-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -675,37 +807,110 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Remove the suggestion card with animation
                     const card = document.getElementById(`suggestion-${suggestionId}`);
-                    card.style.transition = 'all 0.3s ease-out';
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateX(-20px)';
-                    setTimeout(() => {
-                        card.remove();
-                        // Update counter
-                        const counter = document.querySelector('.suggestions-received-count');
-                        if (counter) {
-                            const currentCount = parseInt(counter.textContent);
-                            counter.textContent = currentCount - 1;
-                        }
-                    }, 300);
+                    if (card) {
+                        card.style.transition = 'all 0.3s ease-out';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateX(-20px)';
+                        
+                        setTimeout(() => {
+                            card.remove();
+                            
+                            // Update counter
+                            const counter = document.querySelector('.suggestions-received-count');
+                            if (counter) {
+                                const currentCount = parseInt(counter.textContent);
+                                const newCount = currentCount - 1;
+                                counter.textContent = newCount;
+                                
+                                // Check if there are no more suggestions
+                                const container = document.getElementById('suggestions-container');
+                                if (container && container.children.length === 0) {
+                                    // Show empty state
+                                    container.innerHTML = `
+                                        <div class="text-center py-12">
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fas fa-paper-plane text-2xl text-rose-300"></i>
+                                            </div>
+                                            <p class="text-gray-500">No suggestions received yet</p>
+                                        </div>
+                                    `;
+                                }
+                            }
+                            
+                            // Show success message
+                            showNotification('Suggestion revoked successfully', 'success');
+                        }, 300);
+                    }
                 } else {
-                    alert(data.message || 'Failed to revoke suggestion');
-                    button.innerHTML = originalContent;
-                    button.disabled = false;
+                    throw new Error(data.message || 'Failed to revoke suggestion');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while revoking the suggestion');
+                showNotification(error.message || 'An error occurred while revoking the suggestion', 'error');
                 button.innerHTML = originalContent;
                 button.disabled = false;
             });
         });
     });
+    
+    // Auto-dismiss success/error messages
+    const alertMessages = document.querySelectorAll('[class*="from-emerald-50"], [class*="from-red-50"]');
+    alertMessages.forEach(alert => {
+        if (alert.textContent.trim()) {
+            setTimeout(() => {
+                alert.style.transition = 'all 0.5s ease-out';
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-20px)';
+                setTimeout(() => alert.remove(), 500);
+            }, 5000);
+        }
+    });
+    
+    // Notification helper function
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-2xl transform transition-all duration-300 translate-x-full ${
+            type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+            type === 'error' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+            'bg-gradient-to-r from-blue-500 to-indigo-500'
+        } text-white font-medium flex items-center gap-3`;
+        
+        notification.innerHTML = `
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-circle' :
+                'fa-info-circle'
+            }"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(150%)';
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 3000);
+    }
 });
 </script>
 @endsection

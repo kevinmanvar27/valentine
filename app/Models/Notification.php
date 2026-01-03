@@ -15,6 +15,8 @@ class Notification extends Model
         'message',
         'type',
         'is_read',
+        'related_id',
+        'related_type',
     ];
 
     protected $casts = [
@@ -24,6 +26,11 @@ class Notification extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function profileSuggestion()
+    {
+        return $this->belongsTo(ProfileSuggestion::class, 'related_id');
     }
 
     public function scopeUnread($query)

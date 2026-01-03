@@ -29,12 +29,12 @@ class UserMatch extends Model
 
     public function payments()
     {
-        return $this->hasMany(MatchPayment::class);
+        return $this->hasMany(MatchPayment::class, 'match_id');
     }
 
     public function couple()
     {
-        return $this->hasOne(Couple::class);
+        return $this->hasOne(Couple::class, 'match_id');
     }
 
     public function isMutual(): bool

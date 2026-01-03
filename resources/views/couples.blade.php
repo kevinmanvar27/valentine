@@ -107,7 +107,7 @@
                                 <!-- User 1 Photo -->
                                 <div class="relative z-10 transform -translate-x-4 group-hover:-translate-x-6 transition-transform duration-500">
                                     <div class="relative">
-                                        <img src="{{ Storage::url($couple->user1->live_image) }}" 
+                                        <img src="{{ get_image_url($couple->user1->live_image) }}" 
                                             alt="{{ $couple->user1->full_name }}"
                                             class="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-2xl">
                                         <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -126,7 +126,7 @@
                                 <!-- User 2 Photo -->
                                 <div class="relative z-10 transform translate-x-4 group-hover:translate-x-6 transition-transform duration-500">
                                     <div class="relative">
-                                        <img src="{{ Storage::url($couple->user2->live_image) }}" 
+                                        <img src="{{ get_image_url($couple->user2->live_image) }}" 
                                             alt="{{ $couple->user2->full_name }}"
                                             class="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-2xl">
                                         <div class="absolute -bottom-2 -left-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">

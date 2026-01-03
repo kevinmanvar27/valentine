@@ -171,18 +171,58 @@ class UserController extends Controller
             abort(403);
         }
 
+        // Accept both 'action' and 'response' parameters for backward compatibility
+        $action = $request->input('action') ?? $request->input('response');
+        
+        $request->merge(['response' => $action]);
+        
         $request->validate([
-            'response' => 'required|in:accepted,rejected',
+            'response' => 'required|in:accept,reject,accepted,rejected',
         ]);
 
+        // Normalize action to 'accepted' or 'rejected'
+        $status = in_array($action, ['accept', 'accepted']) ? 'accepted' : 'rejected';
+
         $suggestion->update([
-            'status' => $request->response,
+            'status' => $status,
             'responded_at' => now(),
         ]);
 
         // Check if both users have accepted each other
-        if ($request->response === 'accepted') {
-            $this->checkForMutualMatch($suggestion);
+        if ($status === 'accepted') {
+            $match = $this->checkForMutualMatch($suggestion);
+            
+            // If JSON request (AJAX), return payment URL
+            if ($request->expectsJson()) {
+                if ($match) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Match found! Redirecting to payment...',
+                        'redirect_url' => route('user.matches.payment', $match->id),
+                        'has_match' => true
+                    ]);
+                }
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Profile accepted! Waiting for the other person to accept.',
+                    'has_match' => false
+                ]);
+            }
+            
+            // If match found, redirect to payment
+            if ($match) {
+                return redirect()->route('user.matches.payment', $match->id)
+                    ->with('success', 'Match found! Please complete the payment to exchange contact details.');
+            }
+        } else {
+            // Rejected
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Profile rejected.'
+                ]);
+            }
         }
 
         return back()->with('success', 'Response recorded successfully!');
@@ -224,10 +264,49 @@ class UserController extends Controller
                     'user_id' => $userId,
                     'title' => 'Match Found!',
                     'message' => "Congratulations! You have a mutual match. Please complete the payment of ₹{$paymentAmount} to exchange contact details.",
-                    'type' => 'success',
+                    'type' => 'match',
+                    'related_id' => $match->id,
+                    'related_type' => 'match',
                 ]);
             }
+            
+            return $match;
         }
+        
+        return null;
+    }
+
+    public function getSuggestionDetails(ProfileSuggestion $suggestion)
+    {
+        // Verify the suggestion belongs to the authenticated user
+        if ($suggestion->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
+        // Load the suggested user with all necessary details
+        $suggestion->load('suggestedUser');
+
+        return response()->json([
+            'success' => true,
+            'suggestion' => [
+                'id' => $suggestion->id,
+                'status' => $suggestion->status,
+                'suggested_user' => [
+                    'id' => $suggestion->suggestedUser->id,
+                    'full_name' => $suggestion->suggestedUser->full_name,
+                    'age' => $suggestion->suggestedUser->age,
+                    'location' => $suggestion->suggestedUser->location,
+                    'bio' => $suggestion->suggestedUser->bio,
+                    'keywords' => $suggestion->suggestedUser->keywords,
+                    'instagram_id' => $suggestion->suggestedUser->instagram_id,
+                    'live_image' => $suggestion->suggestedUser->live_image ? asset('storage/' . $suggestion->suggestedUser->live_image) : null,
+                    'is_verified' => $suggestion->suggestedUser->registration_verified ?? false,
+                ]
+            ]
+        ]);
     }
 
     public function matches()
@@ -292,7 +371,12 @@ class UserController extends Controller
 
     public function notifications()
     {
-        $notifications = Auth::user()->notifications()->latest()->paginate(20);
+        $notifications = Auth::user()->notifications()
+            ->with(['profileSuggestion' => function($query) {
+                $query->with('suggestedUser');
+            }])
+            ->latest()
+            ->paginate(20);
         
         return view('user.notifications', compact('notifications'));
     }

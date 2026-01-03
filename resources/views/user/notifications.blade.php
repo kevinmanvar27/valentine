@@ -1,7 +1,58 @@
 @extends('layouts.app')
-@extends('layouts.app')
 
 @section('title', 'Notifications - Valentine Partner Finder')
+
+@push('styles')
+<style>
+    /* Modal animations */
+    #profileModal {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    #profileModal > div {
+        animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Smooth scrollbar for modal */
+    #profileModal > div {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+    }
+    
+    #profileModal > div::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    #profileModal > div::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    #profileModal > div::-webkit-scrollbar-thumb {
+        background-color: rgba(139, 92, 246, 0.3);
+        border-radius: 20px;
+    }
+</style>
+@endpush
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-valentine-100 via-pink-100 to-purple-100 relative overflow-hidden">
@@ -62,6 +113,7 @@
                             'like' => ['icon' => 'fa-heart', 'bg' => 'bg-pink-500', 'border' => 'border-pink-200', 'bgLight' => 'bg-pink-50'],
                             'payment' => ['icon' => 'fa-credit-card', 'bg' => 'bg-green-500', 'border' => 'border-green-200', 'bgLight' => 'bg-green-50'],
                             'verification' => ['icon' => 'fa-shield-check', 'bg' => 'bg-blue-500', 'border' => 'border-blue-200', 'bgLight' => 'bg-blue-50'],
+                            'profile_suggestion' => ['icon' => 'fa-user-plus', 'bg' => 'bg-purple-500', 'border' => 'border-purple-200', 'bgLight' => 'bg-purple-50'],
                             'system' => ['icon' => 'fa-info-circle', 'bg' => 'bg-gray-500', 'border' => 'border-gray-200', 'bgLight' => 'bg-gray-50'],
                             'warning' => ['icon' => 'fa-exclamation-triangle', 'bg' => 'bg-yellow-500', 'border' => 'border-yellow-200', 'bgLight' => 'bg-yellow-50'],
                         ];
@@ -87,6 +139,32 @@
                                     @endif
                                 </div>
                                 <p class="text-gray-600 mb-3">{{ $notification->message }}</p>
+                                
+                                <!-- Profile Suggestion Actions -->
+                                @if($notification->type === 'profile_suggestion' && $notification->related_id)
+                                    @php
+                                        $suggestion = $notification->profileSuggestion;
+                                        $suggestedUser = $suggestion ? $suggestion->suggestedUser : null;
+                                        $suggestionStatus = $suggestion ? $suggestion->status : null;
+                                    @endphp
+                                    
+                                    @if($suggestionStatus === 'pending' && $suggestedUser)
+                                        <!-- View Profile Button -->
+                                        <button onclick="openProfileModal({{ $notification->related_id }})" 
+                                                class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center mb-3">
+                                            <i class="fas fa-user mr-2"></i>View Profile
+                                        </button>
+                                    @elseif($suggestionStatus === 'accepted')
+                                        <span class="inline-flex items-center bg-green-100 text-green-700 px-4 py-2 rounded-xl font-semibold mb-3">
+                                            <i class="fas fa-check-circle mr-2"></i>Accepted
+                                        </span>
+                                    @elseif($suggestionStatus === 'rejected')
+                                        <span class="inline-flex items-center bg-gray-100 text-gray-700 px-4 py-2 rounded-xl font-semibold mb-3">
+                                            <i class="fas fa-times-circle mr-2"></i>Rejected
+                                        </span>
+                                    @endif
+                                @endif
+                                
                                 <div class="flex items-center justify-between">
                                     <span class="text-gray-400 text-sm flex items-center">
                                         <i class="far fa-clock mr-2"></i>
@@ -129,4 +207,264 @@
         @endif
     </div>
 </div>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="closeProfileModal(event)">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="sticky top-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-t-3xl flex items-center justify-between">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-user-circle mr-3"></i>
+                Profile Details
+            </h2>
+            <button onclick="closeProfileModal()" class="text-white hover:bg-white/20 rounded-full p-2 transition-all duration-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Content -->
+        <div id="modalContent" class="p-6">
+            <!-- Loading State -->
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-purple-500 mb-4"></i>
+                <p class="text-gray-600">Loading profile...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+// Store suggestion data for modal
+let currentSuggestionData = {};
+
+// Open profile modal
+function openProfileModal(suggestionId) {
+    const modal = document.getElementById('profileModal');
+    const modalContent = document.getElementById('modalContent');
+    
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Fetch suggestion details
+    fetch(`/user/suggestions/${suggestionId}/details`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSuggestionData = data.suggestion;
+            renderProfileModal(data.suggestion);
+        } else {
+            modalContent.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                    <p class="text-gray-600">${data.message || 'Failed to load profile'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        modalContent.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                <p class="text-gray-600">An error occurred while loading the profile.</p>
+            </div>
+        `;
+    });
+}
+
+// Render profile modal content
+function renderProfileModal(suggestion) {
+    const user = suggestion.suggested_user;
+    const modalContent = document.getElementById('modalContent');
+    
+    // Calculate age
+    const age = user.age || 'N/A';
+    
+    // Format keywords
+    const keywords = user.keywords && user.keywords.length > 0 
+        ? user.keywords.map(k => `<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">${k}</span>`).join(' ')
+        : '<span class="text-gray-400">No keywords</span>';
+    
+    modalContent.innerHTML = `
+        <!-- Profile Image -->
+        <div class="flex justify-center mb-6">
+            <div class="relative">
+                ${user.live_image ? 
+                    `<img src="${user.live_image}" 
+                         alt="${user.full_name}" 
+                         class="w-32 h-32 rounded-full object-cover border-4 border-purple-200 shadow-lg"
+                         onerror="this.onerror=null; this.outerHTML='<div class=\\'w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-4xl font-bold border-4 border-purple-200 shadow-lg\\'>${user.full_name.charAt(0).toUpperCase()}</div>'">` 
+                    : 
+                    `<div class="w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-4xl font-bold border-4 border-purple-200 shadow-lg">
+                        ${user.full_name.charAt(0).toUpperCase()}
+                    </div>`
+                }
+                ${user.is_verified ? '<div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 shadow-lg"><i class="fas fa-check text-sm"></i></div>' : ''}
+            </div>
+        </div>
+        
+        <!-- Profile Info -->
+        <div class="space-y-4 mb-6">
+            <!-- Name and Age -->
+            <div class="text-center">
+                <h3 class="text-2xl font-bold text-gray-900 flex items-center justify-center">
+                    ${user.full_name}
+                    ${user.is_verified ? '<i class="fas fa-badge-check text-blue-500 ml-2" title="Verified"></i>' : ''}
+                </h3>
+                <p class="text-gray-600 text-lg mt-1">${age} years old</p>
+            </div>
+            
+            <!-- Location -->
+            ${user.location ? `
+                <div class="flex items-center justify-center text-gray-700">
+                    <i class="fas fa-map-marker-alt text-valentine-500 mr-2"></i>
+                    <span>${user.location}</span>
+                </div>
+            ` : ''}
+            
+            <!-- Bio -->
+            ${user.bio ? `
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-100">
+                    <h4 class="font-bold text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-quote-left text-purple-500 mr-2"></i>
+                        About
+                    </h4>
+                    <p class="text-gray-700">${user.bio}</p>
+                </div>
+            ` : ''}
+            
+            <!-- Keywords -->
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-100">
+                <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-tags text-purple-500 mr-2"></i>
+                    Keywords
+                </h4>
+                <div class="flex flex-wrap gap-2">
+                    ${keywords}
+                </div>
+            </div>
+            
+            <!-- Instagram -->
+            ${user.instagram_id ? `
+                <div class="flex items-center justify-center text-gray-700">
+                    <i class="fab fa-instagram text-pink-500 mr-2"></i>
+                    <span>@${user.instagram_id}</span>
+                </div>
+            ` : ''}
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-4 pt-6 border-t-2 border-gray-100">
+            <button onclick="respondToSuggestionFromModal(${suggestion.id}, 'reject')" 
+                    class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center">
+                <i class="fas fa-times mr-2"></i>Reject
+            </button>
+            <button onclick="respondToSuggestionFromModal(${suggestion.id}, 'accept')" 
+                    class="flex-1 bg-gradient-to-r from-valentine-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all duration-300 flex items-center justify-center">
+                <i class="fas fa-heart mr-2"></i>Accept
+            </button>
+        </div>
+    `;
+}
+
+// Close profile modal
+function closeProfileModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    
+    const modal = document.getElementById('profileModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    currentSuggestionData = {};
+}
+
+// Respond to suggestion from modal
+function respondToSuggestionFromModal(suggestionId, action) {
+    const modalContent = document.getElementById('modalContent');
+    
+    // Show loading state
+    modalContent.innerHTML = `
+        <div class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-purple-500 mb-4"></i>
+            <p class="text-gray-600">Processing your response...</p>
+        </div>
+    `;
+    
+    fetch(`/user/suggestions/${suggestionId}/respond`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ action: action })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            modalContent.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                    <p class="text-gray-900 font-bold text-xl mb-2">${data.message}</p>
+                    ${data.redirect_url ? '<p class="text-gray-600">Redirecting to payment...</p>' : '<p class="text-gray-600">Updating...</p>'}
+                </div>
+            `;
+            
+            // If there's a payment redirect, redirect after delay
+            if (data.redirect_url) {
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 2000);
+            } else {
+                // Just reload after a short delay to update notification status
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        } else {
+            // Show error message
+            modalContent.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                    <p class="text-gray-900 font-bold text-xl mb-2">Error</p>
+                    <p class="text-gray-600 mb-6">${data.message || 'An error occurred. Please try again.'}</p>
+                    <button onclick="openProfileModal(${suggestionId})" class="bg-purple-500 text-white px-6 py-2 rounded-xl font-semibold hover:bg-purple-600 transition-all">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        modalContent.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                <p class="text-gray-900 font-bold text-xl mb-2">Error</p>
+                <p class="text-gray-600 mb-6">An error occurred. Please try again.</p>
+                <button onclick="openProfileModal(${suggestionId})" class="bg-purple-500 text-white px-6 py-2 rounded-xl font-semibold hover:bg-purple-600 transition-all">
+                    Try Again
+                </button>
+            </div>
+        `;
+    });
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeProfileModal();
+    }
+});
+</script>
+@endpush
+
 @endsection

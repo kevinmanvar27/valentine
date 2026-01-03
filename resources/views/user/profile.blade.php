@@ -53,7 +53,7 @@
                         <div class="relative">
                             <div id="livePhotoPreview" class="w-full h-64 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
                                 @if($user->live_image)
-                                    <img src="{{ Storage::url($user->live_image) }}" alt="Live Photo" class="w-full h-full object-cover">
+                                    <img src="{{ get_image_url($user->live_image) }}" alt="Live Photo" class="w-full h-full object-cover">
                                 @else
                                     <div class="text-center">
                                         <i class="fas fa-camera text-4xl text-gray-400 mb-3"></i>
@@ -75,7 +75,7 @@
                             @if($user->gallery_images && count($user->gallery_images) > 0)
                                 @foreach($user->gallery_images as $image)
                                     <div class="aspect-square rounded-xl overflow-hidden bg-gray-100">
-                                        <img src="{{ Storage::url($image) }}" alt="Gallery" class="w-full h-full object-cover">
+                                        <img src="{{ get_image_url($image) }}" alt="Gallery" class="w-full h-full object-cover">
                                     </div>
                                 @endforeach
                                 @for($i = count($user->gallery_images); $i < 6; $i++)

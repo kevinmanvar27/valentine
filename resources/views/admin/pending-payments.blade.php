@@ -228,7 +228,7 @@
                             <!-- Payer -->
                             <div class="flex items-center gap-3">
                                 <div class="relative">
-                                    <img src="{{ Storage::url($payment->user->live_image) }}" 
+                                    <img src="{{ get_image_url($payment->user->live_image) }}" 
                                         alt="{{ $payment->user->full_name }}"
                                         class="user-avatar w-14 h-14 rounded-full object-cover shadow-md">
                                     <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs
@@ -256,7 +256,7 @@
                                     <p class="text-xs text-gray-500">Match Partner</p>
                                 </div>
                                 <div class="relative">
-                                    <img src="{{ Storage::url($partner->live_image) }}" 
+                                    <img src="{{ get_image_url($partner->live_image) }}" 
                                         alt="{{ $partner->full_name }}"
                                         class="w-14 h-14 rounded-full object-cover shadow-md ring-2 ring-rose-200">
                                     <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs

@@ -146,7 +146,7 @@
                 </div>
                 
                 <!-- Payment Form -->
-                <form action="{{ route('user.match-payment.submit', $match->id) }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('user.matches.payment.submit', $match->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     
                     <!-- Transaction ID -->

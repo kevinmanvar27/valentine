@@ -215,7 +215,7 @@
                 <div class="verification-card glass-card rounded-2xl shadow-xl overflow-hidden animate-fade-in-up" style="opacity: 0;">
                     <!-- Profile Image -->
                     <div class="profile-image-container relative">
-                        <img src="{{ Storage::url($user->live_image) }}" 
+                        <img src="{{ get_image_url($user->live_image) }}" 
                             alt="{{ $user->full_name }}"
                             class="w-full h-48 object-cover">
                         

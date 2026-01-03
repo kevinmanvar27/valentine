@@ -61,7 +61,7 @@
                             <!-- User 1 -->
                             <div class="text-center group">
                                 <div class="relative inline-block">
-                                    <img src="{{ Storage::url($couple->user1->live_image) }}" 
+                                    <img src="{{ get_image_url($couple->user1->live_image) }}" 
                                         alt="{{ $couple->user1->full_name }}"
                                         class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
                                     <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs border-2 border-white
@@ -87,7 +87,7 @@
                             <!-- User 2 -->
                             <div class="text-center group">
                                 <div class="relative inline-block">
-                                    <img src="{{ Storage::url($couple->user2->live_image) }}" 
+                                    <img src="{{ get_image_url($couple->user2->live_image) }}" 
                                         alt="{{ $couple->user2->full_name }}"
                                         class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
                                     <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs border-2 border-white

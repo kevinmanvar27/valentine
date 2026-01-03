@@ -50,7 +50,7 @@
                         <div class="md:w-5/12 p-6 bg-gradient-to-br from-rose-50 to-pink-50 relative">
                             <div class="flex items-center">
                                 <div class="relative">
-                                    <img src="{{ Storage::url($match->user1->live_image) }}" 
+                                    <img src="{{ get_image_url($match->user1->live_image) }}" 
                                         alt="{{ $match->user1->full_name }}"
                                         class="w-16 h-16 rounded-full object-cover border-3 border-white shadow-lg">
                                     <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs
@@ -96,7 +96,7 @@
                         <div class="md:w-5/12 p-6 bg-gradient-to-br from-pink-50 to-purple-50 relative">
                             <div class="flex items-center">
                                 <div class="relative">
-                                    <img src="{{ Storage::url($match->user2->live_image) }}" 
+                                    <img src="{{ get_image_url($match->user2->live_image) }}" 
                                         alt="{{ $match->user2->full_name }}"
                                         class="w-16 h-16 rounded-full object-cover border-3 border-white shadow-lg">
                                     <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs
