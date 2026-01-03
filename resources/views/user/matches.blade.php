@@ -74,7 +74,7 @@
                         <!-- Match Badge -->
                         <div class="bg-gradient-to-r from-valentine-500 to-pink-500 px-4 py-2 text-white text-center text-sm font-medium">
                             <i class="fas fa-heart-circle-check mr-2"></i>
-                            Matched {{ $match->pivot->created_at->diffForHumans() ?? 'recently' }}
+                            Matched {{ $match->match_created_at ? $match->match_created_at->diffForHumans() : 'recently' }}
                         </div>
                         
                         <!-- Photo Section -->
@@ -121,7 +121,7 @@
                             @endif
                             
                             <!-- Contact Info (if payment verified) -->
-                            @if(auth()->user()->payment_verified && isset($match->pivot) && $match->pivot->contact_unlocked)
+                            @if($match->contact_unlocked)
                                 <div class="bg-green-50 rounded-xl p-4 mb-4 border border-green-100">
                                     <p class="text-green-800 text-sm font-medium mb-3">
                                         <i class="fas fa-unlock mr-2"></i>Contact Unlocked
@@ -169,7 +169,7 @@
                                     <p class="text-valentine-600 text-xs">Pay to unlock contact details</p>
                                 </div>
                                 
-                                <a href="{{ route('user.match-payment', $match->id) }}" class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center">
+                                <a href="{{ route('user.matches.payment', $match->match_id) }}" class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center">
                                     <i class="fas fa-unlock mr-2"></i>Unlock Contact
                                 </a>
                             @endif
@@ -177,13 +177,6 @@
                     </div>
                 @endforeach
             </div>
-            
-            <!-- Pagination -->
-            @if($matches->hasPages())
-                <div class="mt-10">
-                    {{ $matches->links() }}
-                </div>
-            @endif
         @endif
     </div>
 </div>

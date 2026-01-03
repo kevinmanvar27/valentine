@@ -70,4 +70,24 @@ class UserMatch extends Model
     {
         return $this->payments()->where('status', 'verified')->count() >= 2;
     }
+
+    public function allPaymentsSubmitted(): bool
+    {
+        return $this->payments()->whereIn('status', ['submitted', 'verified'])->count() >= 2;
+    }
+
+    public function getPaymentStatusForUser($userId): ?MatchPayment
+    {
+        return $this->payments()->where('user_id', $userId)->first();
+    }
+
+    public function getPendingPaymentsCount(): int
+    {
+        return $this->payments()->where('status', 'pending')->count();
+    }
+
+    public function getVerifiedPaymentsCount(): int
+    {
+        return $this->payments()->where('status', 'verified')->count();
+    }
 }

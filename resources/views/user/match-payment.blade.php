@@ -170,9 +170,9 @@
                                     <p class="text-gray-500 text-sm">Click to upload</p>
                                 </div>
                             </div>
-                            <input type="file" name="screenshot" id="screenshotInput" accept="image/*" required class="absolute inset-0 opacity-0 cursor-pointer">
+                            <input type="file" name="payment_screenshot" id="screenshotInput" accept="image/*" required class="absolute inset-0 opacity-0 cursor-pointer">
                         </div>
-                        @error('screenshot')
+                        @error('payment_screenshot')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>

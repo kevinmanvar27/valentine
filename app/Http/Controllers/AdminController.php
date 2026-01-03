@@ -467,6 +467,8 @@ class AdminController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $match = $payment->match;
+
         if ($request->action === 'approve') {
             $payment->update([
                 'status' => 'verified',
@@ -474,33 +476,84 @@ class AdminController extends Controller
                 'admin_notes' => $request->notes,
             ]);
 
-            Notification::create([
-                'user_id' => $payment->user_id,
-                'title' => 'Payment Verified',
-                'message' => 'Your payment has been verified successfully.',
-                'type' => 'success',
-            ]);
-
             // Check if both payments are verified
-            $match = $payment->match;
             if ($match->allPaymentsVerified()) {
+                // Both payments verified - Update match status and create couple
+                $match->update(['status' => 'verified']);
+                
+                // Create couple and share contacts
                 $this->createCouple($match);
+                
+                // Notify both users that match is approved and contacts are shared
+                Notification::create([
+                    'user_id' => $match->user1_id,
+                    'title' => 'Match Approved! 🎉',
+                    'message' => 'Both payments verified! Your contact details have been shared with your match.',
+                    'type' => 'success',
+                    'related_id' => $match->id,
+                    'related_type' => 'match',
+                ]);
+                
+                Notification::create([
+                    'user_id' => $match->user2_id,
+                    'title' => 'Match Approved! 🎉',
+                    'message' => 'Both payments verified! Your contact details have been shared with your match.',
+                    'type' => 'success',
+                    'related_id' => $match->id,
+                    'related_type' => 'match',
+                ]);
+                
+                return back()->with('success', 'Payment verified! Both payments complete - Match approved and contacts shared.');
+            } else {
+                // Only one payment verified - waiting for the other
+                $otherUserId = $payment->user_id === $match->user1_id ? $match->user2_id : $match->user1_id;
+                $otherPayment = $match->payments()->where('user_id', $otherUserId)->first();
+                
+                // Notify the user whose payment was just verified
+                Notification::create([
+                    'user_id' => $payment->user_id,
+                    'title' => 'Payment Verified ✓',
+                    'message' => 'Your payment is verified! Waiting for your match partner to complete their payment.',
+                    'type' => 'success',
+                    'related_id' => $match->id,
+                    'related_type' => 'match',
+                ]);
+                
+                // Remind the other user to submit payment if they haven't
+                if ($otherPayment && $otherPayment->status === 'pending') {
+                    Notification::create([
+                        'user_id' => $otherUserId,
+                        'title' => 'Payment Required',
+                        'message' => 'Your match partner\'s payment has been verified. Please submit your payment to proceed!',
+                        'type' => 'info',
+                        'related_id' => $match->id,
+                        'related_type' => 'match',
+                    ]);
+                }
+                
+                return back()->with('success', 'Payment verified! Waiting for the other user to complete payment.');
             }
         } else {
+            // Payment rejected
             $payment->update([
                 'status' => 'rejected',
                 'admin_notes' => $request->notes,
             ]);
+
+            // Reset match status to pending_payment
+            $match->update(['status' => 'pending_payment']);
 
             Notification::create([
                 'user_id' => $payment->user_id,
                 'title' => 'Payment Rejected',
                 'message' => "Your payment was rejected. Reason: {$request->notes}. Please submit a valid payment.",
                 'type' => 'error',
+                'related_id' => $match->id,
+                'related_type' => 'match',
             ]);
+            
+            return back()->with('error', 'Payment rejected. User has been notified to resubmit.');
         }
-
-        return back()->with('success', 'Payment verification action completed.');
     }
 
     protected function createCouple(UserMatch $match)

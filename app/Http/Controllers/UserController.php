@@ -192,9 +192,11 @@ class UserController extends Controller
         if ($status === 'accepted') {
             $match = $this->checkForMutualMatch($suggestion);
             
-            // If JSON request (AJAX), return payment URL
-            if ($request->expectsJson()) {
-                if ($match) {
+            // ALWAYS redirect to payment when user accepts, regardless of mutual match
+            // This ensures immediate payment upon acceptance
+            if ($match) {
+                // Mutual match found - redirect to payment
+                if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
                         'message' => 'Match found! Redirecting to payment...',
@@ -203,17 +205,23 @@ class UserController extends Controller
                     ]);
                 }
                 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Profile accepted! Waiting for the other person to accept.',
-                    'has_match' => false
-                ]);
-            }
-            
-            // If match found, redirect to payment
-            if ($match) {
                 return redirect()->route('user.matches.payment', $match->id)
                     ->with('success', 'Match found! Please complete the payment to exchange contact details.');
+            } else {
+                // No mutual match yet, but create pending match and payment for this user
+                $pendingMatch = $this->createPendingMatchForUser($suggestion);
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Profile accepted! Please complete payment to proceed.',
+                        'redirect_url' => route('user.matches.payment', $pendingMatch->id),
+                        'has_match' => true
+                    ]);
+                }
+                
+                return redirect()->route('user.matches.payment', $pendingMatch->id)
+                    ->with('success', 'Profile accepted! Please complete payment. Once the other person accepts and pays, contacts will be shared.');
             }
         } else {
             // Rejected
@@ -237,7 +245,7 @@ class UserController extends Controller
             ->exists();
 
         if ($reverseAcceptance) {
-            // Create a match
+            // Get or create match (might already exist from first user's acceptance)
             $match = UserMatch::firstOrCreate([
                 'user1_id' => min($suggestion->user_id, $suggestion->suggested_user_id),
                 'user2_id' => max($suggestion->user_id, $suggestion->suggested_user_id),
@@ -245,12 +253,12 @@ class UserController extends Controller
                 'status' => 'pending_payment',
             ]);
 
-            // Create payment records for both users
+            // Create payment records for both users (if not already created)
             $paymentAmount = $match->getPaymentAmount();
             $paymentType = $match->getPaymentType();
 
             foreach ([$match->user1_id, $match->user2_id] as $userId) {
-                MatchPayment::firstOrCreate([
+                $payment = MatchPayment::firstOrCreate([
                     'match_id' => $match->id,
                     'user_id' => $userId,
                 ], [
@@ -259,21 +267,59 @@ class UserController extends Controller
                     'status' => 'pending',
                 ]);
 
-                // Notify users
-                Notification::create([
-                    'user_id' => $userId,
-                    'title' => 'Match Found!',
-                    'message' => "Congratulations! You have a mutual match. Please complete the payment of ₹{$paymentAmount} to exchange contact details.",
-                    'type' => 'match',
-                    'related_id' => $match->id,
-                    'related_type' => 'match',
-                ]);
+                // Only notify if this is a new payment record (mutual match just happened)
+                if ($payment->wasRecentlyCreated) {
+                    Notification::create([
+                        'user_id' => $userId,
+                        'title' => 'Match Found!',
+                        'message' => "Congratulations! You have a mutual match. Please complete the payment of ₹{$paymentAmount} to exchange contact details.",
+                        'type' => 'match',
+                        'related_id' => $match->id,
+                        'related_type' => 'match',
+                    ]);
+                }
             }
             
             return $match;
         }
         
         return null;
+    }
+
+    protected function createPendingMatchForUser(ProfileSuggestion $suggestion)
+    {
+        // Create or get existing match (one-sided acceptance)
+        $match = UserMatch::firstOrCreate([
+            'user1_id' => min($suggestion->user_id, $suggestion->suggested_user_id),
+            'user2_id' => max($suggestion->user_id, $suggestion->suggested_user_id),
+        ], [
+            'status' => 'pending_payment',
+        ]);
+
+        // Create payment record for the accepting user only
+        $paymentAmount = $match->getPaymentAmount();
+        $paymentType = $match->getPaymentType();
+
+        MatchPayment::firstOrCreate([
+            'match_id' => $match->id,
+            'user_id' => $suggestion->user_id, // Only for the user who accepted
+        ], [
+            'amount' => $paymentAmount,
+            'payment_type' => $paymentType,
+            'status' => 'pending',
+        ]);
+
+        // Notify the accepting user
+        Notification::create([
+            'user_id' => $suggestion->user_id,
+            'title' => 'Complete Your Payment',
+            'message' => "You accepted a profile! Please complete the payment of ₹{$paymentAmount}. Once both of you accept and pay, contacts will be shared.",
+            'type' => 'match',
+            'related_id' => $match->id,
+            'related_type' => 'match',
+        ]);
+
+        return $match;
     }
 
     public function getSuggestionDetails(ProfileSuggestion $suggestion)
@@ -313,10 +359,28 @@ class UserController extends Controller
     {
         $user = Auth::user();
         
-        $matches = UserMatch::where(function ($q) use ($user) {
+        $matchRecords = UserMatch::where(function ($q) use ($user) {
             $q->where('user1_id', $user->id)
               ->orWhere('user2_id', $user->id);
-        })->with(['user1', 'user2', 'payments'])->latest()->paginate(10);
+        })->with(['user1', 'user2', 'payments'])->latest()->get();
+
+        // Transform matches to show partner users with match metadata
+        $matches = collect($matchRecords)->map(function ($match) use ($user) {
+            // Get the partner (the other user in the match)
+            $partner = $match->user1_id === $user->id ? $match->user2 : $match->user1;
+            
+            // Add match metadata to partner object
+            $partner->match_id = $match->id;
+            $partner->match_status = $match->status;
+            $partner->match_created_at = $match->created_at;
+            $partner->user_payment = $match->payments->where('user_id', $user->id)->first();
+            $partner->partner_payment = $match->payments->where('user_id', $partner->id)->first();
+            
+            // Check if contacts are unlocked (both payments verified)
+            $partner->contact_unlocked = $match->allPaymentsVerified();
+            
+            return $partner;
+        });
 
         return view('user.matches', compact('matches'));
     }
@@ -351,6 +415,7 @@ class UserController extends Controller
 
         $request->validate([
             'payment_screenshot' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'transaction_id' => 'nullable|string|max:255',
         ]);
 
         $payment = MatchPayment::where('match_id', $match->id)
@@ -361,12 +426,64 @@ class UserController extends Controller
 
         $payment->update([
             'payment_screenshot' => $screenshotPath,
+            'transaction_id' => $request->transaction_id,
             'status' => 'submitted',
         ]);
 
-        $match->update(['status' => 'payment_submitted']);
+        // Refresh match to get updated payments
+        $match->refresh();
+        $match->load('payments');
 
-        return redirect()->route('user.matches')->with('success', 'Payment screenshot uploaded. Waiting for verification.');
+        // Check if both users have submitted or verified their payments
+        $submittedOrVerifiedCount = $match->payments()
+            ->whereIn('status', ['submitted', 'verified'])
+            ->count();
+        
+        // Get the other user's ID
+        $otherUserId = $user->id === $match->user1_id ? $match->user2_id : $match->user1_id;
+        $otherPayment = $match->payments()->where('user_id', $otherUserId)->first();
+        
+        // Update match status based on payment submissions
+        if ($submittedOrVerifiedCount >= 2) {
+            // Both users have submitted/verified their payments
+            $match->update(['status' => 'payment_submitted']);
+            
+            // Notify the other user if their payment is still pending
+            if ($otherPayment && $otherPayment->status === 'pending') {
+                Notification::create([
+                    'user_id' => $otherUserId,
+                    'title' => 'Payment Reminder',
+                    'message' => 'Your match partner has completed their payment. Please complete yours to proceed!',
+                    'type' => 'info',
+                    'related_id' => $match->id,
+                    'related_type' => 'match',
+                ]);
+            }
+            
+            $message = 'Payment submitted! Both payments received. Waiting for admin verification.';
+        } else {
+            // Only one user has submitted, keep as pending_payment
+            $match->update(['status' => 'pending_payment']);
+            
+            // Check if other user has even accepted yet (payment record exists)
+            if (!$otherPayment) {
+                $message = 'Payment submitted! Waiting for the other person to accept and pay.';
+            } else {
+                $message = 'Payment submitted! Waiting for your match partner to submit their payment.';
+                
+                // Notify the other user to submit payment
+                Notification::create([
+                    'user_id' => $otherUserId,
+                    'title' => 'Payment Reminder',
+                    'message' => 'Your match partner has completed their payment. Please complete yours to proceed!',
+                    'type' => 'info',
+                    'related_id' => $match->id,
+                    'related_type' => 'match',
+                ]);
+            }
+        }
+
+        return redirect()->route('user.matches')->with('success', $message);
     }
 
     public function notifications()

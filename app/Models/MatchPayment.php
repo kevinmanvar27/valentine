@@ -15,6 +15,7 @@ class MatchPayment extends Model
         'amount',
         'payment_type',
         'payment_screenshot',
+        'transaction_id',
         'status',
         'admin_notes',
         'verified_at',
